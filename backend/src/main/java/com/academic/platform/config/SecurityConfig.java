@@ -15,12 +15,16 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.springframework.context.annotation.Lazy;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+            @Lazy com.academic.platform.service.UserService userService)
+            throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
@@ -28,12 +32,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/users/register").permitAll()
                         .requestMatchers("/api/users/**").permitAll() // Allow profile checks and registration
+                        .requestMatchers("/api/seed/**").permitAll() // Allow seeding data
                         .requestMatchers("/api/leaves/parent-view/**").permitAll()
                         .requestMatchers("/api/leaves/parent-action/**").permitAll()
                         .requestMatchers("/error").permitAll() // CRITICAL: Allow error path to see actual error instead
                                                                // of 403
                         .anyRequest().authenticated())
-                .addFilterBefore(new FirebaseTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new FirebaseTokenFilter(userService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -41,7 +46,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://10.10.188.128:5173"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // Correct way to allow all with credentials
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*")); // Support all headers during development
         configuration.setAllowCredentials(true);

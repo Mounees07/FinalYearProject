@@ -34,6 +34,11 @@ public class MeetingController {
         return ResponseEntity.ok(meetingService.getMeetingsForMentor(mentorUid));
     }
 
+    @GetMapping("/mentee/{menteeUid}")
+    public ResponseEntity<List<MentorshipMeeting>> getMenteeMeetings(@PathVariable String menteeUid) {
+        return ResponseEntity.ok(meetingService.getMeetingsForMentee(menteeUid));
+    }
+
     @DeleteMapping("/{meetingId}")
     public ResponseEntity<Void> deleteMeeting(@PathVariable Long meetingId) {
         meetingService.deleteMeeting(meetingId);

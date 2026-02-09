@@ -6,5 +6,7 @@ public enum Role {
     MENTOR,
     HOD,
     PRINCIPAL,
-    ADMIN
+    ADMIN,
+    COE,
+    GATE_SECURITY
 }

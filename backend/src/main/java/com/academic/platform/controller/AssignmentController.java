@@ -56,4 +56,9 @@ public class AssignmentController {
     public ResponseEntity<List<Submission>> getStudentSubmissions(@PathVariable String studentUid) {
         return ResponseEntity.ok(assignmentService.getStudentSubmissions(studentUid));
     }
+
+    @GetMapping("/teacher/section/{sectionId}/submissions")
+    public ResponseEntity<List<Submission>> getSectionSubmissions(@PathVariable Long sectionId) {
+        return ResponseEntity.ok(assignmentService.getSectionSubmissions(sectionId));
+    }
 }

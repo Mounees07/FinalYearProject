@@ -1,5 +1,6 @@
 package com.academic.platform.security;
 
+import com.academic.platform.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.FilterChain;
@@ -18,6 +19,12 @@ import java.util.List;
 
 public class FirebaseTokenFilter extends OncePerRequestFilter {
 
+    private final UserService userService;
+
+    public FirebaseTokenFilter(UserService userService) {
+        this.userService = userService;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -25,7 +32,7 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         String method = request.getMethod();
 
-        // Allow OPTIONS requests to bypass token verification (CORS)
+        // Allow OPTIONS requests (CORS)
         if (method.equals("OPTIONS")) {
             filterChain.doFilter(request, response);
             return;
@@ -39,16 +46,23 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
                 FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
                 String uid = decodedToken.getUid();
 
+                // Fetch real role from DB
+                String role = "USER";
+                var userOpt = userService.getUserByFirebaseUid(uid);
+                if (userOpt.isPresent()) {
+                    role = userOpt.get().getRole().name();
+                }
+
                 List<SimpleGrantedAuthority> authorities = Collections
-                        .singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+                        .singletonList(new SimpleGrantedAuthority("ROLE_" + role));
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(uid, null,
                         authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                logger.info("✅ Token Verified for " + path);
             } catch (Exception e) {
-                logger.error("❌ Token Verification Error for " + path + ": " + e.getMessage());
+                logger.error("Token Error: " + e.getMessage());
             }
         }
 

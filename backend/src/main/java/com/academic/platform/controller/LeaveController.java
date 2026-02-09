@@ -15,10 +15,18 @@ public class LeaveController {
     @Autowired
     private LeaveService leaveService;
 
+    @Autowired
+    private com.academic.platform.service.SystemSettingService systemSettingService;
+
     @PostMapping("/apply")
-    public ResponseEntity<LeaveRequest> applyLeave(
+    public ResponseEntity<?> applyLeave(
             @RequestParam String studentUid,
             @RequestBody LeaveRequest request) {
+
+        if ("false".equalsIgnoreCase(systemSettingService.getSetting("feature.leave.enabled"))) {
+            return ResponseEntity.status(403).body("Leave module is currently disabled by administrator.");
+        }
+
         return ResponseEntity.ok(leaveService.applyLeave(studentUid, request));
     }
 
@@ -67,5 +75,45 @@ public class LeaveController {
             @RequestParam String studentUid,
             @RequestBody LeaveRequest request) {
         return ResponseEntity.ok(leaveService.updateLeave(leaveId, studentUid, request));
+    }
+
+    @PostMapping("/{leaveId}/generate-otp")
+    public ResponseEntity<Void> generateOtp(
+            @PathVariable Long leaveId,
+            @RequestParam String mentorUid) {
+        leaveService.generateOtpForApproval(leaveId, mentorUid);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{leaveId}/verify-otp")
+    public ResponseEntity<LeaveRequest> verifyOtp(
+            @PathVariable Long leaveId,
+            @RequestParam String mentorUid,
+            @RequestBody Map<String, String> payload) {
+        String otp = payload.get("otp");
+        String remarks = payload.get("remarks");
+        return ResponseEntity.ok(leaveService.verifyOtpAndApprove(leaveId, otp, mentorUid, remarks));
+    }
+
+    @PostMapping("/test-email")
+    public ResponseEntity<String> testEmail(@RequestParam String email) {
+        leaveService.testEmail(email);
+        return ResponseEntity.ok("Test email sent to " + email);
+    }
+
+    @GetMapping("/security/active/{rollNumber}")
+    public ResponseEntity<LeaveRequest> getActiveLeaveForStudent(@PathVariable String rollNumber) {
+        LeaveRequest leave = leaveService.getActiveLeaveForStudent(rollNumber);
+        if (leave == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(leave);
+    }
+
+    @PostMapping("/security/{leaveId}/action")
+    public ResponseEntity<LeaveRequest> securityAction(
+            @PathVariable Long leaveId,
+            @RequestParam String action) {
+        return ResponseEntity.ok(leaveService.updateSecurityExitEntry(leaveId, action));
     }
 }

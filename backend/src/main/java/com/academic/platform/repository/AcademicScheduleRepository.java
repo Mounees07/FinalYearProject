@@ -12,4 +12,6 @@ public interface AcademicScheduleRepository extends JpaRepository<AcademicSchedu
     List<AcademicSchedule> findByDateAfterOrderByDateAsc(LocalDate date);
 
     List<AcademicSchedule> findByDepartmentAndDateAfterOrderByDateAsc(String department, LocalDate date);
+
+    List<AcademicSchedule> findTop20ByOrderByIdDesc();
 }

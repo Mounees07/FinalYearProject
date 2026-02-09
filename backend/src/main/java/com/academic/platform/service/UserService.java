@@ -7,6 +7,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Optional;
@@ -35,13 +36,46 @@ public class UserService {
         return userRepository.findByMentorFirebaseUid(mentorUid);
     }
 
+    public List<User> getFacultyByDepartment(String department) {
+        return userRepository.findByDepartmentIgnoreCaseAndRoleIn(department, List.of(Role.TEACHER, Role.MENTOR));
+    }
+
+    public List<User> getStudentsByDepartment(String department) {
+        return userRepository.findByDepartmentIgnoreCaseAndRoleIn(department, List.of(Role.STUDENT));
+    }
+
     private Integer safeParseInt(String value) {
         if (value == null || value.trim().isEmpty())
             return null;
+        String cleaned = value.trim().toUpperCase();
+
+        // Handle common prefixes
+        cleaned = cleaned.replace("SEM", "").replace("SEMESTER", "").trim();
+
         try {
-            return Integer.parseInt(value.trim());
+            return Integer.parseInt(cleaned);
         } catch (NumberFormatException e) {
-            return null; // Fallback to null if not a number
+            // Handle Roman Numerals common in Indian Universities
+            switch (cleaned) {
+                case "I":
+                    return 1;
+                case "II":
+                    return 2;
+                case "III":
+                    return 3;
+                case "IV":
+                    return 4;
+                case "V":
+                    return 5;
+                case "VI":
+                    return 6;
+                case "VII":
+                    return 7;
+                case "VIII":
+                    return 8;
+                default:
+                    return null;
+            }
         }
     }
 
@@ -186,7 +220,13 @@ public class UserService {
     public User registerUser(String firebaseUid, String email, String fullName, String profilePictureUrl, Role role) {
         Optional<User> existingByUid = userRepository.findByFirebaseUid(firebaseUid);
         if (existingByUid.isPresent()) {
-            return existingByUid.get();
+            User user = existingByUid.get();
+            // Update role if user already exists and role is different or null
+            if (role != null && user.getRole() != role) {
+                user.setRole(role);
+                return userRepository.save(user);
+            }
+            return user;
         }
 
         Optional<User> existingByEmail = userRepository.findByEmail(email.toLowerCase());
@@ -194,6 +234,7 @@ public class UserService {
             User user = existingByEmail.get();
             user.setFirebaseUid(firebaseUid);
             user.setProfilePictureUrl(profilePictureUrl);
+            user.setRole(role);
             if (fullName != null && !fullName.isEmpty())
                 user.setFullName(fullName);
             return userRepository.save(user);
@@ -207,5 +248,81 @@ public class UserService {
                 .role(role)
                 .build();
         return userRepository.save(user);
+    }
+
+    public User updateUser(String uid, User updates) {
+        User user = userRepository.findByFirebaseUid(uid)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (updates.getFullName() != null)
+            user.setFullName(updates.getFullName());
+        if (updates.getRollNumber() != null)
+            user.setRollNumber(updates.getRollNumber());
+        if (updates.getDepartment() != null)
+            user.setDepartment(updates.getDepartment());
+        if (updates.getSemester() != null)
+            user.setSemester(updates.getSemester());
+        if (updates.getSection() != null)
+            user.setSection(updates.getSection());
+        if (updates.getGpa() != null)
+            user.setGpa(updates.getGpa());
+        if (updates.getAttendance() != null)
+            user.setAttendance(updates.getAttendance());
+        if (updates.getRole() != null)
+            user.setRole(updates.getRole());
+
+        return userRepository.save(user);
+    }
+
+    public void deleteUser(String uid) {
+        User user = userRepository.findByFirebaseUid(uid)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        userRepository.delete(user);
+    }
+
+    public User createUser(User user, String password) throws Exception {
+        Optional<User> existing = userRepository.findByEmail(user.getEmail().toLowerCase());
+        if (existing.isPresent()) {
+            throw new RuntimeException("User with this email already exists in Database");
+        }
+
+        // Create in Firebase Auth
+        try {
+            com.google.firebase.auth.UserRecord.CreateRequest request = new com.google.firebase.auth.UserRecord.CreateRequest()
+                    .setEmail(user.getEmail())
+                    .setDisplayName(user.getFullName())
+                    .setPassword(password)
+                    .setEmailVerified(true); // Auto-verify email for admin-created users
+
+            com.google.firebase.auth.UserRecord userRecord = com.google.firebase.auth.FirebaseAuth.getInstance()
+                    .createUser(request);
+
+            user.setFirebaseUid(userRecord.getUid());
+            user.setEmail(user.getEmail().toLowerCase());
+
+            // Set custom claims for role if needed, or rely on our DB role source of truth.
+            // For completeness, we could set custom claims, but our frontend checks DB.
+
+            return userRepository.save(user);
+
+        } catch (com.google.firebase.auth.FirebaseAuthException e) {
+            throw new RuntimeException("Firebase Auth Error: " + e.getMessage());
+        }
+    }
+
+    public User seedDummyFaculty(String department) {
+        String email = "faculty." + department.toLowerCase().replaceAll("\\s+", "") + "@example.com";
+        Optional<User> existing = userRepository.findByEmail(email);
+        if (existing.isPresent())
+            return existing.get();
+
+        User dummy = User.builder()
+                .email(email)
+                .fullName("Dr. Demo Faculty (" + department + ")")
+                .role(Role.TEACHER)
+                .department(department)
+                .firebaseUid("dummy_faculty_" + System.currentTimeMillis())
+                .build();
+        return userRepository.save(dummy);
     }
 }

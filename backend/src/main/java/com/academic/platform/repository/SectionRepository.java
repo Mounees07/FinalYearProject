@@ -15,4 +15,6 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
 
     boolean existsByCourseAndFacultyAndSemesterAndYear(com.academic.platform.model.Course course, User faculty,
             String semester, Integer year);
+
+    List<Section> findBySemester(String semester);
 }

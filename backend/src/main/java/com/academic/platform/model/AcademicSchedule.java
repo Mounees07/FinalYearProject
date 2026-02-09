@@ -43,6 +43,7 @@ public class AcademicSchedule {
         SKILL_TRAINING,
         INTERNAL_EXAM,
         SEMESTER_EXAM,
-        LAB_PRACTICAL
+        LAB_PRACTICAL,
+        FACULTY_MEETING
     }
 }

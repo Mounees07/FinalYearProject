@@ -10,4 +10,6 @@ public interface MentorshipMeetingRepository extends JpaRepository<MentorshipMee
     List<List<MentorshipMeeting>> findByMentorFirebaseUid(String mentorUid);
 
     List<MentorshipMeeting> findByMenteeFirebaseUid(String menteeUid);
+
+    List<MentorshipMeeting> findByStartTimeBefore(java.time.LocalDateTime dateTime);
 }

@@ -7,7 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/schedules")
@@ -23,9 +25,48 @@ public class AcademicScheduleController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<List<AcademicSchedule>> uploadSchedule(
+    public ResponseEntity<?> uploadSchedule(
             @RequestParam("file") MultipartFile file,
             @RequestParam("hodUid") String hodUid) {
-        return ResponseEntity.ok(scheduleService.processBulkUpload(file, hodUid));
+        try {
+            return ResponseEntity.ok(scheduleService.processBulkUpload(file, hodUid));
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    @GetMapping("/recent-uploads")
+    public ResponseEntity<List<AcademicSchedule>> getRecentUploads() {
+        return ResponseEntity.ok(scheduleService.getRecentSchedules());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateSchedule(
+            @PathVariable Long id,
+            @RequestBody AcademicSchedule schedule,
+            @RequestParam String uid) {
+        try {
+            return ResponseEntity.ok(scheduleService.updateSchedule(id, schedule, uid));
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteSchedule(
+            @PathVariable Long id,
+            @RequestParam String uid) {
+        try {
+            scheduleService.deleteSchedule(id, uid);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
     }
 }

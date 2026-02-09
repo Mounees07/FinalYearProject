@@ -10,7 +10,13 @@ import java.util.Optional;
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
     List<LeaveRequest> findByStudentFirebaseUid(String studentUid);
 
-    List<LeaveRequest> findByStudentMentorFirebaseUidAndParentStatus(String mentorUid, String parentStatus);
+    @org.springframework.data.jpa.repository.Query("SELECT l FROM LeaveRequest l WHERE l.student.mentor.firebaseUid = :mentorUid AND (l.parentStatus = 'APPROVED' OR l.parentStatus = 'PENDING')")
+    List<LeaveRequest> findByStudentMentorFirebaseUidAndParentStatus(
+            @org.springframework.data.repository.query.Param("mentorUid") String mentorUid);
 
     Optional<LeaveRequest> findByParentActionToken(String token);
+
+    List<LeaveRequest> findByStudentDepartmentOrderByCreatedAtDesc(String department);
+
+    List<LeaveRequest> findByStudentRollNumber(String rollNumber);
 }

@@ -35,6 +35,12 @@ public class LeaveRequest {
 
     private String parentActionToken; // Token for email link
 
+    private String approvalOtp;
+    private LocalDateTime approvalOtpExpiry;
+
+    private LocalDateTime actualExitTime;
+    private LocalDateTime actualReturnTime;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 

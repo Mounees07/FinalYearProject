@@ -87,6 +87,12 @@ public class MeetingService {
                                 .toList();
         }
 
+        public List<MentorshipMeeting> getMeetingsForMentee(String menteeUid) {
+                return meetingRepository.findAll().stream()
+                                .filter(m -> m.getMentee().getFirebaseUid().equals(menteeUid))
+                                .toList();
+        }
+
         public void deleteMeeting(Long meetingId) {
                 MentorshipMeeting meeting = meetingRepository.findById(meetingId)
                                 .orElseThrow(() -> new RuntimeException("Meeting not found"));
@@ -127,5 +133,18 @@ public class MeetingService {
                                                 "<p>Location: " + saved.getLocation() + "</p></body></html>");
 
                 return saved;
+        }
+
+        @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000) // Run every minute
+        public void cleanupPastMeetings() {
+                // Remove meetings that started more than 1 hour ago
+                java.time.LocalDateTime threshold = java.time.LocalDateTime.now().minusHours(1);
+
+                List<MentorshipMeeting> pastMeetings = meetingRepository.findByStartTimeBefore(threshold);
+
+                if (!pastMeetings.isEmpty()) {
+                        System.out.println("Cleaning up " + pastMeetings.size() + " past meetings...");
+                        meetingRepository.deleteAll(pastMeetings);
+                }
         }
 }
