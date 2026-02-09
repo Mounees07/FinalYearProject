@@ -8,19 +8,20 @@ import {
     UserCheck,
     Bell,
     Settings,
-    LogOut,
     GraduationCap,
     Users,
     FileText,
     ShieldCheck,
     TrendingUp,
-    Plus
+    Plus,
+    ClipboardCheck,
+    MapPin
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
-    const { userData, logout } = useAuth();
+    const { userData } = useAuth();
 
     const studentLinks = [
         { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
@@ -28,29 +29,32 @@ const Sidebar = () => {
         { to: '/student/course-registration', icon: <Plus size={20} />, label: 'Choose Faculty' },
         { to: '/schedule', icon: <Calendar size={20} />, label: 'Schedule' },
         { to: '/student/assignments', icon: <ClipboardList size={20} />, label: 'Assignments' },
-        { to: '/student/leaves', icon: <FileText size={20} />, label: 'Leave Status' }, // Added
+        { to: '/student/exam-seating', icon: <MapPin size={20} />, label: 'Exam Seating' },
+        { to: '/student/leaves', icon: <FileText size={20} />, label: 'Leave Status' },
         { to: '/attendance', icon: <UserCheck size={20} />, label: 'Attendance' },
-        { to: '/results', icon: <GraduationCap size={20} />, label: 'Results' },
+        { to: '/student/results', icon: <GraduationCap size={20} />, label: 'Results' },
         { to: '/academic-calendar', icon: <Calendar size={20} />, label: 'Academic Calendar' },
     ];
 
     const teacherLinks = [
         { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
-        { to: '/manage-courses', icon: <BookOpen size={20} />, label: 'My Classes' },
+        { to: '/teacher/courses', icon: <BookOpen size={20} />, label: 'My Courses' },
+        { to: '/mentees', icon: <Users size={20} />, label: 'My Mentees' },
         { to: '/marking-attendance', icon: <UserCheck size={20} />, label: 'Attendance' },
         { to: '/grading', icon: <ClipboardList size={20} />, label: 'Grading' },
         { to: '/study-materials', icon: <FileText size={20} />, label: 'Materials' },
+        { to: '/meetings', icon: <Calendar size={20} />, label: 'Meetings' },
         { to: '/schedule', icon: <Calendar size={20} />, label: 'Schedule' },
     ];
 
     const mentorLinks = [
         { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
         { to: '/mentees', icon: <Users size={20} />, label: 'My Mentees' },
-        { to: '/mentor/leaves', icon: <ClipboardList size={20} />, label: 'Leave Approvals' }, // Added
-        { to: '/mentor/attendance', icon: <UserCheck size={20} />, label: 'Mentee Attendance' }, // Added
+        { to: '/mentor/leaves', icon: <ClipboardList size={20} />, label: 'Leave Approvals' },
+        { to: '/mentor/attendance', icon: <UserCheck size={20} />, label: 'Mentee Attendance' },
         { to: '/performance-reports', icon: <TrendingUp size={20} />, label: 'Performance' },
         { to: '/meetings', icon: <Calendar size={20} />, label: 'Meetings' },
-        { to: '/manage-courses', icon: <BookOpen size={20} />, label: 'My Courses' },
+        { to: '/teacher/courses', icon: <BookOpen size={20} />, label: 'My Courses' }, // Points to same catalog
         { to: '/schedule', icon: <Calendar size={20} />, label: 'Schedule' },
     ];
 
@@ -60,8 +64,9 @@ const Sidebar = () => {
         { to: '/faculty-management', icon: <Users size={20} />, label: 'Faculty' },
         { to: '/curriculum', icon: <BookOpen size={20} />, label: 'Curriculum' },
         { to: '/department-analytics', icon: <TrendingUp size={20} />, label: 'Analytics' },
-        { to: '/hod/schedule-upload', icon: <Calendar size={20} />, label: 'Manage Schedule' },
+        { to: '/hod/schedule-upload', icon: <Calendar size={20} />, label: 'Class Timetable' },
         { to: '/schedule', icon: <Calendar size={20} />, label: 'View Schedule' },
+        { to: '/hod/meetings', icon: <Calendar size={20} />, label: 'Faculty Meetings' },
         { to: '/announcements', icon: <Bell size={20} />, label: 'Notices' },
     ];
 
@@ -74,10 +79,23 @@ const Sidebar = () => {
     ];
 
     const adminLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Admin Panel' },
-        { to: '/users', icon: <Users size={20} />, label: 'User Management' },
+        { to: '/admin/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
+        { to: '/admin/users', icon: <Users size={20} />, label: 'User Management' },
+        { to: '/admin/courses', icon: <BookOpen size={20} />, label: 'All Courses' },
         { to: '/system-config', icon: <Settings size={20} />, label: 'Configuration' },
-        { to: '/logs', icon: <FileText size={20} />, label: 'System Logs' },
+    ];
+
+    const coeLinks = [
+        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
+        { to: '/coe/schedule-exams', icon: <Calendar size={20} />, label: 'Exam Schedule' },
+        { to: '/coe/seating-allocation', icon: <Users size={20} />, label: 'Seating Allocation' },
+        { to: '/coe/publish-results', icon: <ClipboardCheck size={20} />, label: 'Publish Results' },
+    ];
+
+    const gateSecurityLinks = [
+        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
+        { to: '/gate/visitor-log', icon: <ClipboardList size={20} />, label: 'Visitor Log' },
+        { to: '/gate/student-entry', icon: <UserCheck size={20} />, label: 'Student Entry' },
     ];
 
     const getLinksByRole = (role) => {
@@ -88,6 +106,8 @@ const Sidebar = () => {
             case 'HOD': return hodLinks;
             case 'PRINCIPAL': return principalLinks;
             case 'ADMIN': return adminLinks;
+            case 'COE': return coeLinks;
+            case 'GATE_SECURITY': return gateSecurityLinks;
             default: return studentLinks;
         }
     };
@@ -116,12 +136,7 @@ const Sidebar = () => {
                 ))}
             </nav>
 
-            <div className="sidebar-footer">
-                <button onClick={logout} className="nav-link logout-btn">
-                    <LogOut size={20} />
-                    <span>Logout</span>
-                </button>
-            </div>
+
         </aside>
     );
 };

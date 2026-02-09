@@ -47,14 +47,42 @@ const ParentResponse = () => {
     );
 
     if (actionProcessed || leave.parentStatus !== 'PENDING') {
-        const isApproved = leave.parentStatus === 'APPROVED';
+        const isApproved = leave.parentStatus === 'APPROVED' || leave.parentStatus === 'PROCESSED'; // Handling potential future statuses
         return (
-            <div style={{ maxWidth: '600px', margin: '60px auto', padding: '40px', textAlign: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', borderRadius: '12px', background: 'white' }}>
-                {isApproved ? <CheckCircle size={60} color="#10b981" style={{ margin: '0 auto' }} /> : <XCircle size={60} color="#ef4444" style={{ margin: '0 auto' }} />}
-                <h1 style={{ color: isApproved ? '#10b981' : '#ef4444', marginTop: '20px' }}>
-                    Request {isApproved ? 'Approved' : 'Rejected'}
-                </h1>
-                <p style={{ color: '#64748b' }}>You have successfully processed this leave request.</p>
+            <div style={{ maxWidth: '600px', margin: '60px auto', padding: '40px', textAlign: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', borderRadius: '12px', background: 'white', fontFamily: 'Inter, sans-serif' }}>
+                {isApproved ? (
+                    <>
+                        <CheckCircle size={60} color="#10b981" style={{ margin: '0 auto' }} />
+                        <h1 style={{ color: '#10b981', marginTop: '20px', marginBottom: '10px' }}>
+                            Request Approved
+                        </h1>
+                        <p style={{ color: '#64748b', marginBottom: '30px' }}>
+                            You have successfully approved the leave request for <strong>{leave.student.fullName}</strong>.
+                        </p>
+
+                        {leave.approvalOtp && (
+                            <div style={{ background: '#f8fafc', padding: '25px', borderRadius: '12px', border: '1px dashed #cbd5e1', marginTop: '20px' }}>
+                                <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '15px' }}>
+                                    Please share this One-Time Password (OTP) with your ward or their mentor to complete the process:
+                                </p>
+                                <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '8px', color: '#334155', fontFamily: 'monospace' }}>
+                                    {leave.approvalOtp}
+                                </div>
+                                <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '15px' }}>
+                                    This code has also been sent to your email.
+                                </p>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <XCircle size={60} color="#ef4444" style={{ margin: '0 auto' }} />
+                        <h1 style={{ color: '#ef4444', marginTop: '20px' }}>
+                            Request Rejected
+                        </h1>
+                        <p style={{ color: '#64748b' }}>You have rejected this leave request.</p>
+                    </>
+                )}
             </div>
         );
     }

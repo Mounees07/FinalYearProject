@@ -31,7 +31,8 @@
     font-family: var(--font-heading);
     font-size: 1.5rem;
     font-weight: 800;
-    background: linear-gradient(135deg, white, var(--text-secondary));
+    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -55,31 +56,27 @@
     font-weight: 500;
 }
 
+[data-theme='light'] .nav-link {
+    color: #475569;
+    /* Slate 600 explicitly */
+    font-weight: 600;
+    /* Slightly bolder for visibility */
+}
+
 .nav-link:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    background: var(--bg-subtle);
+    color: var(--text-primary);
+}
+
+[data-theme='light'] .nav-link:hover {
+    background: #f1f5f9;
+    /* Slate 100 */
+    color: #0f172a;
+    /* Slate 900 */
 }
 
 .nav-link.active {
     background: linear-gradient(135deg, var(--primary), var(--accent));
     color: white;
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-}
-
-.sidebar-footer {
-    margin-top: auto;
-    border-top: 1px solid var(--border-color);
-    padding-top: 20px;
-}
-
-.logout-btn {
-    width: 100%;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: var(--danger) !important;
-}
-
-.logout-btn:hover {
-    background: rgba(239, 68, 68, 0.1) !important;
 }

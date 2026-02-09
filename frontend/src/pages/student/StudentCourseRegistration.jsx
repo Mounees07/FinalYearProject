@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, User, Calendar, CheckCircle, Lock, Edit2 } from 'lucide-react';
+import { BookOpen, User, Calendar, CheckCircle, Lock, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import './StudentCourses.css';
+import './StudentCourseRegistration.css';
 
 const StudentCourseRegistration = () => {
     const { currentUser } = useAuth();
@@ -23,7 +23,7 @@ const StudentCourseRegistration = () => {
         try {
             // 1. Get all sections
             const sectionRes = await api.get('/courses/sections');
-            const sections = sectionRes.data;
+            const sections = sectionRes.data.filter(sec => sec.faculty?.role !== 'STUDENT');
 
             // Group by Course ID
             const groups = {};
@@ -118,18 +118,52 @@ const StudentCourseRegistration = () => {
     const courseIds = Object.keys(groupedSections);
 
     return (
-        <div className="student-courses-container">
-            <header className="page-header">
-                <h1>Choose Faculty</h1>
-                <p>Select your preferred faculty for each course. <span className="text-amber-400">Note: Selections are locked for 24 hours. Max 2 changes allowed.</span></p>
+        <div className="registration-container animate-fade-in">
+            {/* Header */}
+            <header className="reg-header">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1><BookOpen size={28} className="text-primary" /> Choose Faculty</h1>
+                        <p>Select your preferred faculty for pending courses. Manage your academic schedule effectively.</p>
+                        <div className="reg-note">
+                            <Lock size={14} />
+                            <span>Selections are locked for 24 hours after confirmation. Max 2 changes allowed.</span>
+                        </div>
+                    </div>
+
+                    {/* Dev Actions - Subtly placed */}
+                    <div className="dev-actions">
+                        <button
+                            onClick={async () => {
+                                if (!window.confirm("Run system cleanup to remove duplicates?")) return;
+                                try { await api.delete('/seed/duplicates'); alert("Cleanup complete."); fetchData(); } catch (e) { alert(e.message); }
+                            }}
+                            className="btn-secondary-action warning"
+                            title="Remove duplicate sections"
+                        >
+                            <Trash2 size={14} /> Cleanup
+                        </button>
+                        <button
+                            onClick={async () => {
+                                if (!window.confirm("Reset all your faculty selections? This cannot be undone.")) return;
+                                try { await api.delete(`/seed/enrollments?studentUid=${currentUser.uid}`); alert("Selections reset."); fetchData(); } catch (e) { alert(e.message); }
+                            }}
+                            className="btn-secondary-action danger"
+                            title="Reset all selections"
+                        >
+                            <RefreshCw size={14} /> Reset
+                        </button>
+                    </div>
+                </div>
             </header>
 
-            <div className="courses-grid">
+            {/* Content Grid */}
+            <div className="reg-grid">
                 {courseIds.length === 0 ? (
-                    <div className="empty-state">
-                        <BookOpen size={48} className="text-gray-400 mb-4" />
-                        <h3>No Courses Open</h3>
-                        <p>No active course sections available for registration.</p>
+                    <div className="empty-state glass-card p-12 text-center col-span-full">
+                        <BookOpen size={48} className="text-gray-500 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-gray-400">No Courses Available</h3>
+                        <p className="text-gray-600 mt-2">There are no active course sections open for registration at this time.</p>
                     </div>
                 ) : (
                     courseIds.map(ids => {
@@ -141,65 +175,60 @@ const StudentCourseRegistration = () => {
                         const changesRemaining = isEnrolled ? 2 - (enrollment.changeCount || 0) : 2;
 
                         return (
-                            <div key={course.id} className={`course-card glass-card ${isEnrolled ? 'border-l-4 border-l-green-500' : ''}`}>
-                                <div className="course-header">
-                                    <div className="flex justify-between items-start">
-                                        <div className="course-code">{course.code}</div>
+                            <div key={course.id} className={`reg-card ${isEnrolled ? 'enrolled' : ''}`}>
+                                <div className="reg-card-content">
+                                    <div className="course-meta-top">
+                                        <span className="meta-badge">{course.code}</span>
                                         {isEnrolled && (
-                                            <div className="flex items-center gap-2 text-green-400">
-                                                <CheckCircle size={16} />
-                                                <span className="text-xs font-bold uppercase tracking-wider">Assigned</span>
+                                            <div className="status-badge-enrolled">
+                                                <CheckCircle size={12} strokeWidth={3} />
+                                                <span>ENROLLED</span>
                                             </div>
                                         )}
                                     </div>
-                                    <h2 className="mt-2 text-xl font-bold">{course.name}</h2>
-                                    <p className="text-sm text-gray-400 line-clamp-2 mt-1">{course.description}</p>
+
+                                    <h2>{course.name}</h2>
+                                    <p className="course-desc">{course.description || "No description available for this course."}</p>
                                 </div>
 
-                                <div className="p-4 border-t border-white/10 mt-auto">
-                                    <label className="block text-xs font-medium text-gray-400 uppercase mb-2">
-                                        Select Faculty / Section
-                                    </label>
-
+                                <div className="reg-card-footer">
                                     {isEnrolled && locked ? (
-                                        <div className="bg-white/5 p-3 rounded-lg border border-white/10">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm font-semibold text-white">
+                                        <div className="locked-panel">
+                                            <div className="locked-header">
+                                                <span className="faculty-name-display">
                                                     {group.sections.find(s => s.id === enrollment.sectionId)?.faculty?.fullName || enrollment.facultyName}
                                                 </span>
-                                                <div className="flex items-center text-amber-500 text-xs" title="Locked for 24h">
-                                                    <Lock size={12} className="mr-1" />
-                                                    Locked ({getRemainingTime(enrollment)})
+                                                <div className="lock-status warn">
+                                                    <Lock size={12} /> {getRemainingTime(enrollment)}
                                                 </div>
                                             </div>
-                                            <div className="text-xs text-gray-500">
-                                                You can change faculty after the lock period expires.
-                                            </div>
+                                            <div className="text-xs text-muted">You can update this selection after the lock period.</div>
                                         </div>
                                     ) : isEnrolled && changesRemaining === 0 ? (
-                                        <div className="bg-white/5 p-3 rounded-lg border border-white/10">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm font-semibold text-white">
+                                        <div className="locked-panel">
+                                            <div className="locked-header">
+                                                <span className="faculty-name-display">
                                                     {group.sections.find(s => s.id === enrollment.sectionId)?.faculty?.fullName || enrollment.facultyName}
                                                 </span>
-                                                <div className="flex items-center text-red-400 text-xs">
-                                                    <Lock size={12} className="mr-1" />
-                                                    Final Selection
+                                                <div className="lock-status error">
+                                                    <Lock size={12} /> Final
                                                 </div>
                                             </div>
-                                            <div className="text-xs text-gray-500">
-                                                Maximum changes reached.
-                                            </div>
+                                            <div className="text-xs text-muted">Maximum changes reached. Contact admin for help.</div>
                                         </div>
                                     ) : (
-                                        <div className="space-y-3">
-                                            {isEnrolled && (
-                                                <div className="text-xs text-blue-400 text-right">
-                                                    Changes remaining: {changesRemaining}
-                                                </div>
-                                            )}
+                                        <div className="input-group">
+                                            <div className="input-group-header">
+                                                <label>Select Faculty</label>
+                                                {isEnrolled && (
+                                                    <span className="changes-info">
+                                                        Changes left: {changesRemaining}
+                                                    </span>
+                                                )}
+                                            </div>
+
                                             <select
-                                                className="w-full bg-black/20 border border-white/20 rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-primary transition-colors"
+                                                className="custom-select"
                                                 value={selectedSections[course.id] || ""}
                                                 onChange={(e) => {
                                                     setSelectedSections({
@@ -208,28 +237,23 @@ const StudentCourseRegistration = () => {
                                                     });
                                                 }}
                                             >
-                                                <option value="" disabled>-- Choose Faculty --</option>
+                                                <option value="" disabled>-- Choose Preferred Faculty --</option>
                                                 {group.sections.map(sec => (
                                                     <option key={sec.id} value={sec.id}>
-                                                        {sec.faculty.fullName} ({sec.semester} {sec.year})
+                                                        {sec.faculty.fullName}
+                                                        {/* Optional: Add seats if available in data */}
                                                     </option>
                                                 ))}
                                             </select>
 
                                             <button
                                                 onClick={() => handleRegister(course.id)}
-                                                className={`w-full py-2 rounded font-medium text-sm transition-all flex items-center justify-center gap-2
-                                                    ${isEnrolled
-                                                        ? 'bg-white/10 hover:bg-white/20 text-white'
-                                                        : 'bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/25'
-                                                    }`}
+                                                className={`btn-confirm ${isEnrolled ? 'btn-update' : ''}`}
                                             >
                                                 {isEnrolled ? (
-                                                    <>
-                                                        <Edit2 size={14} /> Update Selection
-                                                    </>
+                                                    <> <Edit2 size={16} /> Update Faculty </>
                                                 ) : (
-                                                    "Confirm Faculty"
+                                                    <> <CheckCircle size={16} /> Confirm Selection </>
                                                 )}
                                             </button>
                                         </div>

@@ -23,7 +23,7 @@
 
 .column-header {
     padding: 20px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--glass-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -32,8 +32,8 @@
 .mini-search {
     display: flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
+    background: var(--bg-subtle);
+    border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 4px 10px;
     gap: 8px;
@@ -42,7 +42,7 @@
 .mini-search input {
     background: transparent;
     border: none;
-    color: white;
+    color: var(--text-primary);
     font-size: 0.85rem;
     outline: none;
     width: 120px;
@@ -66,7 +66,7 @@
 }
 
 .mgmt-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--glass-bg-hover);
 }
 
 .mgmt-item.selected {
@@ -75,7 +75,8 @@
 }
 
 .mgmt-item.selected .sub {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
+    /* Keep white for selected item contrast against primary */
 }
 
 .item-info {
@@ -86,6 +87,7 @@
 
 .item-info .name {
     font-weight: 600;
+    color: var(--text-primary);
 }
 
 .item-info .sub {
@@ -99,6 +101,7 @@
 
 .selected .assigned-icon {
     color: white;
+    /* Contrast against primary */
 }
 
 .action-column {
@@ -120,8 +123,9 @@
     flex-direction: column;
     gap: 8px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-subtle);
     border-radius: 12px;
+    border: 1px solid var(--glass-border);
 }
 
 .status-box .label {
@@ -134,6 +138,7 @@
 .status-box .value {
     font-weight: 700;
     font-size: 1.1rem;
+    color: var(--text-primary);
 }
 
 .arrow-icon {

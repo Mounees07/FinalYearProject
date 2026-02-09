@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/api';
 import {
     Building2,
     Users,
@@ -20,9 +22,50 @@ import {
     Area
 } from 'recharts';
 import '../../pages/DashboardOverview.css';
+import './HODDashboard.css';
 
 
 const HODDashboard = () => {
+    const { currentUser, userData } = useAuth();
+    const [stats, setStats] = useState({
+        faculty: 0,
+        projects: 0,
+        students: 0,
+        courses: 0,
+        pendingLeaves: 0
+    });
+    const [recentRequests, setRecentRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            if (!userData?.department) {
+                // If userData is loaded but department is missing, we might stop loading or wait
+                if (userData) setLoading(false);
+                return;
+            }
+            try {
+                const res = await api.get(`/department/dashboard/${userData.department}`);
+                const data = res.data;
+                setStats({
+                    faculty: data.totalFaculty,
+                    projects: data.totalCourses,
+                    students: data.totalStudents,
+                    courses: data.totalCourses,
+                    pendingLeaves: data.pendingLeaves
+                });
+                setRecentRequests(data.recentActivities);
+            } catch (err) {
+                console.error("Failed to fetch department stats", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (userData) {
+            fetchDashboardData();
+        }
+    }, [userData]);
+
     const deptData = [
         { month: 'Jan', performance: 75, research: 40 },
         { month: 'Feb', performance: 78, research: 45 },
@@ -42,28 +85,28 @@ const HODDashboard = () => {
                     <div className="stat-icon attendance"><Briefcase /></div>
                     <div className="stat-info">
                         <span className="label">Department Faculty</span>
-                        <span className="value">24 Active</span>
+                        <span className="value">{stats.faculty} Active</span>
                     </div>
                 </div>
                 <div className="stat-card glass-card">
                     <div className="stat-icon courses"><Building2 /></div>
                     <div className="stat-info">
-                        <span className="label">Ongoing Projects</span>
-                        <span className="value">08 Active</span>
+                        <span className="label">Active Courses</span>
+                        <span className="value">{stats.courses} Ongoing</span>
                     </div>
                 </div>
                 <div className="stat-card glass-card">
                     <div className="stat-icon gpa"><TrendingUp /></div>
                     <div className="stat-info">
-                        <span className="label">Dept. Success Rate</span>
-                        <span className="value">92%</span>
+                        <span className="label">Total Students</span>
+                        <span className="value">{stats.students}</span>
                     </div>
                 </div>
                 <div className="stat-card glass-card">
                     <div className="stat-icon tasks"><AlertTriangle /></div>
                     <div className="stat-info">
-                        <span className="label">Budget Alerts</span>
-                        <span className="value">02 Pending</span>
+                        <span className="label">Pending Requests</span>
+                        <span className="value">{stats.pendingLeaves} Pending</span>
                     </div>
                 </div>
             </div>
@@ -98,27 +141,19 @@ const HODDashboard = () => {
                         <h3>Recent Requests</h3>
                     </div>
                     <div className="deadline-list">
-                        <div className="deadline-item">
-                            <div className="deadline-icon cs"><FileText /></div>
-                            <div className="deadline-info">
-                                <h4>Leave Approval - Dr. Smith</h4>
-                                <p>Urgent • Dec 29</p>
-                            </div>
-                        </div>
-                        <div className="deadline-item">
-                            <div className="deadline-icon math"><FileText /></div>
-                            <div className="deadline-info">
-                                <h4>Lab Equipment Proposal</h4>
-                                <p>Pending Review</p>
-                            </div>
-                        </div>
-                        <div className="deadline-item">
-                            <div className="deadline-icon physics"><Bell /></div>
-                            <div className="deadline-info">
-                                <h4>Department Meeting</h4>
-                                <p>In 2 hours</p>
-                            </div>
-                        </div>
+                        {recentRequests.length === 0 ? (
+                            <p className="text-muted p-4">No recent requests.</p>
+                        ) : (
+                            recentRequests.map((req, idx) => (
+                                <div className="deadline-item" key={idx}>
+                                    <div className="deadline-icon cs"><FileText /></div>
+                                    <div className="deadline-info">
+                                        <h4>{req.reason}</h4>
+                                        <p>{req.student?.fullName || "Student"} • {new Date(req.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

@@ -57,7 +57,7 @@
 
 .course-description {
     font-size: 0.9rem;
-    color: #cbd5e1;
+    color: var(--text-muted);
     margin-bottom: 20px;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -73,12 +73,12 @@
     align-items: center;
     margin-top: auto;
     padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--glass-border);
 }
 
 .credits-badge {
     font-size: 0.8rem;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-subtle);
     padding: 4px 8px;
     border-radius: 4px;
     color: var(--text-secondary);
@@ -91,7 +91,7 @@
     align-items: center;
     justify-content: center;
     padding: 64px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--glass-bg);
     border-radius: 16px;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border: 1px dashed var(--glass-border);
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, User, Calendar, Clock } from 'lucide-react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -6,6 +7,7 @@ import './StudentCourses.css';
 
 const StudentCourses = () => {
     const { currentUser } = useAuth();
+    const navigate = useNavigate();
     const [enrollments, setEnrollments] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -26,7 +28,7 @@ const StudentCourses = () => {
         }
     }, [currentUser]);
 
-    if (loading) return <div className="p-8 text-center">Loading courses...</div>;
+    if (loading) return <div className="p-8 text-center text-white">Loading courses...</div>;
 
     return (
         <div className="student-courses-container">
@@ -43,34 +45,42 @@ const StudentCourses = () => {
                         <p>You are not currently enrolled in any courses.</p>
                     </div>
                 ) : (
-                    enrollments.map(enrollment => (
-                        <div key={enrollment.id} className="course-card glass-card">
-                            <div className="course-header">
-                                <div className="course-code">{enrollment.section.course.code}</div>
-                                <h2>{enrollment.section.course.name}</h2>
-                            </div>
-
-                            <div className="course-details">
-                                <div className="detail-item">
-                                    <User size={16} />
-                                    <span>{enrollment.section.faculty.fullName}</span>
+                    enrollments.map(enrollment => {
+                        if (!enrollment.section) return null;
+                        return (
+                            <div key={enrollment.id} className="course-card glass-card">
+                                <div className="course-header">
+                                    <div className="course-code">{enrollment.section.course?.code || 'N/A'}</div>
+                                    <h2>{enrollment.section.course?.name || 'Untitled Course'}</h2>
                                 </div>
-                                <div className="detail-item">
-                                    <Calendar size={16} />
-                                    <span>{enrollment.section.semester} {enrollment.section.year}</span>
+
+                                <div className="course-details">
+                                    <div className="detail-item">
+                                        <User size={16} />
+                                        <span>{enrollment.section.faculty?.fullName || 'Unknown Faculty'}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <Calendar size={16} />
+                                        <span>{enrollment.section.semester} {enrollment.section.year}</span>
+                                    </div>
+                                </div>
+
+                                <div className="course-description">
+                                    {enrollment.section.course?.description || 'No description provided.'}
+                                </div>
+
+                                <div className="course-footer">
+                                    <span className="credits-badge">{enrollment.section.course?.credits || 0} Credits</span>
+                                    <button
+                                        className="btn btn-sm btn-primary"
+                                        onClick={() => navigate(`/student/courses/${enrollment.section.id}`)}
+                                    >
+                                        View Content
+                                    </button>
                                 </div>
                             </div>
-
-                            <div className="course-description">
-                                {enrollment.section.course.description}
-                            </div>
-
-                            <div className="course-footer">
-                                <span className="credits-badge">{enrollment.section.course.credits} Credits</span>
-                                <button className="btn btn-sm btn-primary">View Content</button>
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>

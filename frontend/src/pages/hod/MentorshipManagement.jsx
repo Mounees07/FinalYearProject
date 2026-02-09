@@ -107,6 +107,18 @@ const MentorshipManagement = () => {
         }
     };
 
+    const downloadMappingTemplate = () => {
+        const csvContent = "Student Email,Mentor Email\nstudent@example.com,mentor@example.com";
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'mentor_mapping_template.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     if (loading) return <div className="loading-screen"><Loader className="animate-spin" /></div>;
 
     return (
@@ -130,7 +142,14 @@ const MentorshipManagement = () => {
                         Bulk Student Upload
                     </button>
 
+                    <div style={{ width: '1px', height: '24px', background: 'var(--glass-border)', margin: '0 8px' }}></div>
+
                     {/* Bulk Assign Mentors */}
+                    <button className="btn btn-outline" onClick={downloadMappingTemplate} title="Download Template">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Template
+                    </button>
+
                     <input
                         type="file"
                         id="bulk-upload"

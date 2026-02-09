@@ -10,16 +10,13 @@
     justify-content: space-between;
     align-items: flex-end;
     padding-bottom: 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .header-content h1 {
     font-size: 2rem;
     font-weight: 700;
-    background: linear-gradient(to right, #fff, #94a3b8);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--text-primary);
     margin-bottom: 8px;
 }
 
@@ -28,7 +25,7 @@
 .syllabus-preview {
     font-size: 0.9rem;
     line-height: 1.6;
-    color: #cbd5e1;
+    color: var(--text-secondary);
     display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;
@@ -49,8 +46,8 @@
 }
 
 .stat-item {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 16px;
     display: flex;
@@ -73,7 +70,7 @@
     display: block;
     font-size: 1.25rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--text-primary);
 }
 
 .stat-info .label {
@@ -89,9 +86,9 @@
 
 .course-card {
     position: relative;
-    background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+    background: var(--bg-secondary);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-border);
     border-radius: 16px;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -150,14 +147,14 @@
     font-size: 1.25rem;
     font-weight: 700;
     line-height: 1.4;
-    color: #f1f5f9;
+    color: var(--text-primary);
 }
 
 .syllabus-box {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--bg-subtle);
     border-radius: 10px;
     padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
     flex: 1;
 }
 
@@ -176,7 +173,7 @@
 .syllabus-preview {
     font-size: 0.9rem;
     line-height: 1.6;
-    color: #cbd5e1;
+    color: var(--text-secondary);
     display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;
@@ -187,7 +184,7 @@
 .card-actions {
     margin-top: auto;
     padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--glass-border);
     display: flex;
     justify-content: flex-end;
 }
@@ -227,8 +224,8 @@
 .modal-content {
     width: 100%;
     max-width: 600px;
-    background: #1e293b;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     display: flex;
@@ -277,9 +274,9 @@
 
 .form-input {
     width: 100%;
-    background: #0f172a;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--bg-subtle);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
     padding: 12px;
     border-radius: 8px;
     font-size: 1rem;
@@ -303,6 +300,6 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--bg-subtle);
     border-radius: 0 0 20px 20px;
 }

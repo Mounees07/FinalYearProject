@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
     Users,
     Calendar,
@@ -58,15 +59,13 @@ const MentorDashboard = () => {
         const fetchDashboardData = async () => {
             if (!currentUser) return;
             try {
-                const response = await api.get(`/users/mentees/${currentUser.uid}`);
-                const mentees = response.data;
-                setRecentMentees(mentees.slice(0, 3));
+                const menteesRes = await api.get(`/users/mentees/${currentUser.uid}`);
+                const mentees = menteesRes.data;
 
-                // Identify At-Risk students
+                setRecentMentees(mentees.slice(0, 3));
                 const atRisk = mentees.filter(m => (m.gpa && m.gpa < 2.5) || (m.attendance && m.attendance < 75));
                 setAtRiskStudents(atRisk);
 
-                // Calculate real stats
                 if (mentees.length > 0) {
                     const totalGpa = mentees.reduce((acc, m) => acc + (m.gpa || 3.0), 0);
                     setStats(prev => ({
@@ -75,6 +74,7 @@ const MentorDashboard = () => {
                         avgGpa: (totalGpa / mentees.length).toFixed(2)
                     }));
                 }
+
             } catch (err) {
                 console.error("Error fetching mentor dashboard data:", err);
             } finally {
@@ -110,7 +110,7 @@ const MentorDashboard = () => {
             </header>
 
             <div className="stats-grid">
-                <div className="stat-card glass-card">
+                <div className="stat-card">
                     <div className="stat-icon courses"><Users /></div>
                     <div className="stat-info">
                         <span className="label">Total Mentees</span>
@@ -118,21 +118,21 @@ const MentorDashboard = () => {
                     </div>
                     <div className="stat-badge positive"><ArrowUpRight size={12} /> 12%</div>
                 </div>
-                <div className="stat-card glass-card">
+                <div className="stat-card">
                     <div className="stat-icon attendance"><Calendar /></div>
                     <div className="stat-info">
                         <span className="label">Meetings</span>
                         <span className="value">{stats.pendingMeetings} Today</span>
                     </div>
                 </div>
-                <div className="stat-card glass-card">
+                <div className="stat-card">
                     <div className="stat-icon gpa"><TrendingUp /></div>
                     <div className="stat-info">
                         <span className="label">Avg Mentee GPA</span>
                         <span className="value">{stats.avgGpa}</span>
                     </div>
                 </div>
-                <div className="stat-card glass-card">
+                <div className="stat-card">
                     <div className="stat-icon tasks"><Award /></div>
                     <div className="stat-info">
                         <span className="label">Current Success</span>
@@ -140,6 +140,8 @@ const MentorDashboard = () => {
                     </div>
                 </div>
             </div>
+
+
 
             <div className="dashboard-grid">
                 <div className="main-content-area">

@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 import {
     Users,
     Calendar,
@@ -25,6 +28,26 @@ import '../../pages/DashboardOverview.css';
 
 
 const TeacherDashboard = () => {
+    const { currentUser } = useAuth();
+    const [mySections, setMySections] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSections = async () => {
+            if (currentUser) {
+                try {
+                    const res = await api.get(`/courses/sections/faculty/${currentUser.uid}`);
+                    console.log("TeacherDashboard fetched sections:", res.data);
+                    setMySections(Array.isArray(res.data) ? res.data : []);
+                } catch (error) {
+                    console.error("Failed to fetch sections", error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+        fetchSections();
+    }, [currentUser]);
     const classData = [
         { name: 'CS101', attendance: 85, performance: 78 },
         { name: 'CS202', attendance: 92, performance: 88 },
@@ -42,13 +65,7 @@ const TeacherDashboard = () => {
             </header>
 
             <div className="stats-grid">
-                <div className="stat-card glass-card">
-                    <div className="stat-icon courses"><BookOpen /></div>
-                    <div className="stat-info">
-                        <span className="label">Total Classes</span>
-                        <span className="value">4 Units</span>
-                    </div>
-                </div>
+
                 <div className="stat-card glass-card">
                     <div className="stat-icon attendance"><Users /></div>
                     <div className="stat-info">
@@ -71,6 +88,8 @@ const TeacherDashboard = () => {
                     </div>
                 </div>
             </div>
+
+
 
             <div className="dashboard-grid">
                 <div className="chart-section glass-card">

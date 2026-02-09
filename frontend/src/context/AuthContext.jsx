@@ -6,7 +6,8 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     googleProvider,
-    auth
+    auth,
+    sendPasswordResetEmail
 } from '../firebase/firebase';
 import api from '../utils/api';
 
@@ -44,17 +45,37 @@ export const AuthProvider = ({ children }) => {
     const signupWithEmail = async (email, password, fullName, role = 'STUDENT') => {
         setError("");
         try {
-            const result = await createUserWithEmailAndPassword(auth, email, password);
+            let userCredential;
+            try {
+                userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            } catch (createError) {
+                if (createError.code === 'auth/email-already-in-use') {
+                    // If user exists in Firebase, try logging in to get the token and update DB
+                    userCredential = await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    throw createError;
+                }
+            }
+
+            const token = await userCredential.user.getIdToken();
             const regData = {
-                firebaseUid: result.user.uid,
+                firebaseUid: userCredential.user.uid,
                 email: email,
                 fullName: fullName,
                 role: role
             };
-            await api.post('/users/register', regData);
-            setUserData(regData);
-            return result;
+
+            // Send registration data to backend (which now handles updates)
+            const response = await api.post('/users/register', regData, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            setUserData(response.data);
+            return userCredential;
         } catch (err) {
+            console.error("Signup Error:", err);
             setError(err.message);
             throw err;
         }
@@ -78,6 +99,8 @@ export const AuthProvider = ({ children }) => {
                     // Auto-registration for Google users if not in DB
                     if (user.providerData[0].providerId === 'google.com') {
                         try {
+                            // NOTE: Google login defaults to STUDENT. 
+                            // If a different role is needed, the user must use the specific Role Sign-up form first.
                             const regRes = await api.post('/users/register', {
                                 firebaseUid: user.uid,
                                 email: user.email,
@@ -100,6 +123,10 @@ export const AuthProvider = ({ children }) => {
         return unsubscribe;
     }, []);
 
+    const resetPassword = (email) => {
+        return sendPasswordResetEmail(auth, email);
+    };
+
     const value = {
         currentUser,
         userData,
@@ -108,7 +135,8 @@ export const AuthProvider = ({ children }) => {
         loginWithGoogle,
         loginWithEmail,
         signupWithEmail,
-        logout
+        logout,
+        resetPassword
     };
 
     return (

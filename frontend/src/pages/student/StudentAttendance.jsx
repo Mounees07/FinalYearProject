@@ -11,6 +11,10 @@ const StudentAttendance = () => {
     const [alreadyMarked, setAlreadyMarked] = useState(false);
     const [todayStatus, setTodayStatus] = useState(null);
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     useEffect(() => {
         fetchData();
         checkToday();
@@ -48,6 +52,14 @@ const StudentAttendance = () => {
         }
     };
 
+    // Calculate pagination derived state
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentHistory = history.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(history.length / itemsPerPage);
+
+    const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
+
     if (loading) return <div className="loading-screen"><Loader className="animate-spin" /></div>;
 
     return (
@@ -80,28 +92,68 @@ const StudentAttendance = () => {
                 {history.length === 0 ? (
                     <p className="empty-text">No attendance records found.</p>
                 ) : (
-                    <table className="attendance-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {history.map(record => (
-                                <tr key={record.id}>
-                                    <td>{record.date}</td>
-                                    <td>{record.checkInTime}</td>
-                                    <td>
-                                        <span className={`status-badge ${record.status === 'LATE' ? 'status-late' : 'status-present'}`}>
-                                            {record.status}
-                                        </span>
-                                    </td>
+                    <>
+                        <table className="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {currentHistory.map(record => (
+                                    <tr key={record.id}>
+                                        <td>{record.date}</td>
+                                        <td>{record.checkInTime}</td>
+                                        <td>
+                                            <span className={`status-badge ${record.status === 'LATE' ? 'status-late' : 'status-present'}`}>
+                                                {record.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        {totalPages > 1 && (
+                            <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', padding: '20px', gap: '15px', alignItems: 'center' }}>
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    style={{
+                                        padding: '5px 10px',
+                                        background: 'rgba(255,255,255,0.1)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        color: 'white',
+                                        borderRadius: '4px',
+                                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                        opacity: currentPage === 1 ? 0.5 : 1
+                                    }}
+                                >
+                                    Previous
+                                </button>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    Page <span style={{ color: 'white', fontWeight: 'bold' }}>{currentPage}</span> of {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    style={{
+                                        padding: '5px 10px',
+                                        background: 'rgba(255,255,255,0.1)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        color: 'white',
+                                        borderRadius: '4px',
+                                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                        opacity: currentPage === totalPages ? 0.5 : 1
+                                    }}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

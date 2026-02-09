@@ -49,7 +49,14 @@ const StudentAssignments = () => {
 
                 // Sort by due date
                 allAssignments.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                setAssignments(allAssignments);
+
+                // Filter out demo assignments per user request
+                const cleanAssignments = allAssignments.filter(a =>
+                    !a.title.startsWith("Assignment 1:") &&
+                    !a.title.includes("Midterm Project")
+                );
+
+                setAssignments(cleanAssignments);
 
             } catch (error) {
                 console.error("Failed to fetch assignments", error);

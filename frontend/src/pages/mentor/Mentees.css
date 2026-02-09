@@ -326,3 +326,116 @@
 .w-full {
     width: 100%;
 }
+
+/* Student Detail Modal & Edit Scroll Support */
+.detail-modal {
+    max-width: 600px;
+    /* Slightly wider for details */
+}
+
+.student-detail-view {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-height: 70vh;
+    /* restrict height */
+    overflow-y: auto;
+    /* enable scrolling */
+    padding-right: 8px;
+    /* space for scrollbar */
+}
+
+/* Custom Scrollbar for the view */
+.student-detail-view::-webkit-scrollbar {
+    width: 6px;
+}
+
+.student-detail-view::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.student-detail-view::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.student-detail-view::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.detail-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    overflow: hidden;
+}
+
+.detail-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+.detail-section h4 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: var(--primary);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.9rem;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row span {
+    color: var(--text-secondary);
+}
+
+.info-row strong {
+    color: white;
+}
+
+.action-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.edit-grid .form-group {
+    margin-bottom: 0;
+}

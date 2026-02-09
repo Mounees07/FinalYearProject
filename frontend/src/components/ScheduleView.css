@@ -11,7 +11,7 @@
 
 .schedule-header h2 {
     font-size: 1.5rem;
-    color: var(--text-primary, #fff);
+    color: var(--text-primary);
     margin: 0;
 }
 
@@ -36,7 +36,7 @@
     align-items: center;
     gap: 1rem;
     margin-bottom: 1rem;
-    color: var(--text-secondary, #94a3b8);
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
@@ -44,7 +44,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--glass-border);
 }
 
 .schedule-cards {
@@ -54,20 +54,20 @@
 }
 
 .schedule-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 1.25rem;
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
+    box-shadow: var(--shadow-subtle);
 }
 
 .schedule-card:hover {
-    background: rgba(255, 255, 255, 0.06);
     transform: translateY(-2px);
-    border-color: rgba(99, 102, 241, 0.2);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    border-color: var(--primary);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .schedule-card::before {
@@ -117,7 +117,8 @@
 .card-title {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #f8fafc;
+    color: var(--card-color, var(--primary));
+    /* Use the card color or primary */
     margin: 0;
 }
 
@@ -125,8 +126,9 @@
     font-size: 0.7rem;
     padding: 2px 8px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
+    background: var(--bg-subtle);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 600;
@@ -136,7 +138,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
 }
@@ -146,7 +148,7 @@
     flex-direction: column;
     gap: 0.5rem;
     font-size: 0.9rem;
-    color: #cbd5e1;
+    color: var(--text-muted);
 }
 
 .card-detail-item {
@@ -158,10 +160,10 @@
 .empty-state {
     text-align: center;
     padding: 3rem;
-    color: #64748b;
-    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-muted);
+    background: var(--bg-card);
     border-radius: 16px;
-    border: 2px dashed rgba(255, 255, 255, 0.05);
+    border: 2px dashed var(--glass-border);
 }
 
 @media (max-width: 768px) {

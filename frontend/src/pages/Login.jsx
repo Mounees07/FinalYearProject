@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, AlertCircle } from 'lucide-react';
+import { GraduationCap, Mail, Lock, AlertCircle, Eye, EyeOff, Home, ChevronDown, X } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [formError, setFormError] = useState("");
+    const [showContact, setShowContact] = useState(false);
     const { loginWithGoogle, loginWithEmail, error } = useAuth();
     const navigate = useNavigate();
 
@@ -33,70 +35,114 @@ const Login = () => {
 
     return (
         <div className="login-container">
-            <div className="login-visual">
-                <div className="visual-content">
-                    <h1>Empowering the next generation of learners.</h1>
-                    <p>A unified platform for academic excellence and seamless collaboration.</p>
-                </div>
-            </div>
+            {/* Top Navigation Overlay */}
+            <nav className="page-nav">
+                <a href="#" onClick={(e) => { e.preventDefault(); setShowContact(true); }}>Contact us</a>
+                <a href="#">English <ChevronDown size={14} /></a>
 
+                <Link to="/" className="home-icon"><Home size={20} /></Link>
+            </nav>
+
+            {/* Left Side: Form */}
             <div className="login-form-side">
-                <div className="login-card glass-card animate-fade-in">
-                    <div className="login-header">
-                        <GraduationCap size={48} className="login-logo" />
-                        <h2>Welcome Back</h2>
-                        <p>Please sign in to your account</p>
+                <div className="login-header">
+                    <h2>WELCOME BACK!</h2>
+                    <p>Enter your credentials to access your account.</p>
+                </div>
+
+                {(formError || error) && (
+                    <div className="error-message">
+                        <AlertCircle size={18} />
+                        <span>{formError || error}</span>
                     </div>
+                )}
 
-                    {(formError || error) && (
-                        <div className="error-message">
-                            <AlertCircle size={18} />
-                            <span>{formError || error}</span>
-                        </div>
-                    )}
-
-                    <form onSubmit={handleEmailLogin} className="auth-form">
-                        <div className="input-group">
-                            <Mail size={20} />
+                <form onSubmit={handleEmailLogin} className="auth-form">
+                    <div className="input-label-group">
+                        <label>Username</label>
+                        <div className="input-wrapper">
                             <input
                                 type="email"
-                                placeholder="Email Address"
+                                placeholder="deniel123@gmail.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
                         </div>
-                        <div className="input-group">
-                            <Lock size={20} />
+                    </div>
+
+                    <div className="input-label-group">
+                        <label>Password</label>
+                        <div className="input-wrapper">
                             <input
-                                type="password"
-                                placeholder="Password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="●●●●●●●●"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
+                            <div className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </div>
                         </div>
-
-                        <button type="submit" className="btn btn-primary btn-block">
-                            Sign In
-                        </button>
-                    </form>
-
-                    <div className="auth-separator">
-                        <span>OR</span>
                     </div>
 
-                    <button onClick={handleGoogleLogin} className="btn-google">
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/layout/google.svg" alt="google" />
-                        Continue with Google
-                    </button>
+                    <div className="form-options">
+                        <label className="remember-me">
+                            <input type="checkbox" />
+                            Remember me
+                        </label>
+                        <Link to="/forgot-password" className="forgot-password">Forget password?</Link>
+                    </div>
 
-                    <div className="auth-divider">
-                        <span>Don't have an account?</span>
-                        <Link to="/signup" className="text-link">Create one</Link>
+                    <button type="submit" className="btn btn-primary btn-block">
+                        Sign In
+                    </button>
+                </form>
+
+                <div className="social-login-section">
+                    <div className="social-divider">
+                        <span>or</span>
+                    </div>
+                    <div className="social-buttons">
+                        <button type="button" onClick={handleGoogleLogin} className="social-btn google">
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQN1HgAOQZBf48TI55AvzbnfV0IFrCCrX6ldg&s" alt="google" width="24" />
+                            <span>Continue with Google</span>
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Right Side: Visual */}
+            <div className="login-visual">
+                <div className="illustration-container">
+                    <div className="blob-bg"></div>
+                    <img
+                        src="https://img.freepik.com/free-vector/creative-team-concept-illustration_114360-3942.jpg?t=st=1738096000~exp=1738099600~hmac=98a3b839352636136d3969"
+                        alt="Creative Learning"
+                        className="hero-image"
+                    />
+                </div>
+            </div>
+
+            {/* Contact Modal */}
+            {showContact && (
+                <div className="modal-overlay" onClick={() => setShowContact(false)}>
+                    <div className="contact-card" onClick={e => e.stopPropagation()}>
+                        <div className="contact-header">
+                            <h3>Contact Support</h3>
+                            <button onClick={() => setShowContact(false)} className="close-btn"><X size={24} /></button>
+                        </div>
+                        <div className="contact-body">
+                            <p style={{ marginBottom: '15px', color: '#6b7280' }}>For any queries or assistance, please contact:</p>
+                            <div className="contact-detail">
+                                <Mail size={20} className="text-primary" style={{ color: '#8b5cf6' }} />
+                                <a href="mailto:sankavi881@gmail.com">sankavi8881@gmail.com</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

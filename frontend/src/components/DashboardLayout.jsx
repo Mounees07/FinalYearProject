@@ -4,14 +4,14 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import './DashboardLayout.css';
 
-const DashboardLayout = () => {
+const DashboardLayout = ({ children }) => {
     return (
         <div className="dashboard-container">
             <Sidebar />
             <main className="main-content">
                 <Navbar />
                 <div className="page-content animate-fade-in">
-                    <Outlet />
+                    {children || <Outlet />}
                 </div>
             </main>
         </div>

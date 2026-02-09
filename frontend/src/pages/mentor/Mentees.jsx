@@ -9,7 +9,8 @@ import {
     UserPlus,
     Loader,
     Upload,
-    Calendar
+    Calendar,
+    AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
@@ -24,6 +25,11 @@ const Mentees = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [allStudents, setAllStudents] = useState([]);
     const [adding, setAdding] = useState(false);
+
+    // Edit State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({});
+    const [saving, setSaving] = useState(false);
 
     // Meeting Modal State
     const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -109,6 +115,20 @@ const Mentees = () => {
         }
     };
 
+    const handleUpdate = async () => {
+        setSaving(true);
+        try {
+            await api.put(`/users/${selectedMentee.firebaseUid}`, editForm);
+            alert("Student details updated successfully!");
+            setSelectedMentee(null); // Close modal
+            fetchMentees(); // Refresh list
+        } catch (err) {
+            alert("Failed to update: " + (err.response?.data?.message || err.message));
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const getStatusColor = (gpa) => {
         if (gpa >= 3.8) return '#10b981'; // Excellent
         if (gpa >= 3.0) return '#6366f1'; // Good
@@ -133,10 +153,7 @@ const Mentees = () => {
                     <p>Monitor individual student performance and provide direct guidance.</p>
                 </div>
                 <div className="header-actions">
-                    <button className="btn btn-secondary" onClick={() => { setSelectedMentee(null); setShowMeetingModal(true); }}>
-                        <Calendar size={18} />
-                        Schedule Group Meeting
-                    </button>
+
                     <button className="btn btn-primary" onClick={() => { fetchAvailableStudents(); setShowAddModal(true); }}>
                         <UserPlus size={18} />
                         Add Mentee
@@ -206,13 +223,13 @@ const Mentees = () => {
                         <div className="mentee-contact">
                             <a href={`mailto:${mentee.email}`} className="contact-link"><Mail size={16} /></a>
                             <a href={`tel:${mentee.phone || '#'}`} className="contact-link"><Phone size={16} /></a>
-                            <button
-                                className="btn btn-primary btn-sm"
-                                onClick={() => { setSelectedMentee(mentee); setShowMeetingModal(true); }}
-                            >
-                                <Calendar size={14} /> Schedule
-                            </button>
-                            <button className="btn btn-text">
+
+                            <button className="btn btn-text" onClick={() => {
+                                setSelectedMentee(mentee);
+                                setEditForm(mentee);
+                                setIsEditing(false);
+                                setShowMeetingModal(false);
+                            }}>
                                 Details <ExternalLink size={14} />
                             </button>
                         </div>
@@ -249,59 +266,132 @@ const Mentees = () => {
                     </div>
                 </div>
             )}
-            {showMeetingModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content glass-card">
-                        <div className="modal-header">
-                            <h2>{selectedMentee ? `Schedule Meeting with ${selectedMentee.fullName}` : "Schedule Group Meeting"}</h2>
-                            <button className="close-btn" onClick={() => setShowMeetingModal(false)}>&times;</button>
+
+            {/* Student Details Modal */}
+            {
+                selectedMentee && !showMeetingModal && (
+                    <div className="modal-overlay" onClick={() => setSelectedMentee(null)}>
+                        <div className="modal-content glass-card detail-modal" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>{isEditing ? 'Edit Student Profile' : 'Student Profile'}</h2>
+                                <button className="close-btn" onClick={() => setSelectedMentee(null)}>&times;</button>
+                            </div>
+
+                            <div className="student-detail-view">
+                                <div className="detail-header">
+                                    <div className="detail-avatar">
+                                        {selectedMentee.profilePictureUrl ?
+                                            <img src={selectedMentee.profilePictureUrl} alt="" /> :
+                                            (selectedMentee.fullName || "?").charAt(0)}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        {!isEditing ? (
+                                            <>
+                                                <h3>{selectedMentee.fullName}</h3>
+                                                <p className="text-muted">{selectedMentee.email}</p>
+                                                <span className={`status-badge ${selectedMentee.gpa > 7 ? 'success' : 'warning'}`}>
+                                                    {selectedMentee.gpa > 7 ? 'Good Standing' : 'Needs Attention'}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <div className="form-group mb-0">
+                                                <label>Full Name</label>
+                                                <input
+                                                    className="form-input"
+                                                    value={editForm.fullName || ''}
+                                                    onChange={e => setEditForm({ ...editForm, fullName: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="detail-grid">
+                                    <div className="detail-section">
+                                        <h4>Academic Information</h4>
+                                        {!isEditing ? (
+                                            <>
+                                                <div className="info-row"><span>Register No:</span> <strong>{selectedMentee.rollNumber || 'N/A'}</strong></div>
+                                                <div className="info-row"><span>Department:</span> <strong>{selectedMentee.department || 'N/A'}</strong></div>
+                                                <div className="info-row"><span>Semester:</span> <strong>{selectedMentee.semester || 'N/A'}</strong></div>
+                                                <div className="info-row"><span>Section:</span> <strong>{selectedMentee.section || 'N/A'}</strong></div>
+                                            </>
+                                        ) : (
+                                            <div className="edit-grid">
+                                                <div className="form-group">
+                                                    <label>Register No</label>
+                                                    <input value={editForm.rollNumber || ''} onChange={e => setEditForm({ ...editForm, rollNumber: e.target.value })} />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Dept</label>
+                                                    <input value={editForm.department || ''} onChange={e => setEditForm({ ...editForm, department: e.target.value })} />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Semester</label>
+                                                    <input type="number" value={editForm.semester || ''} onChange={e => setEditForm({ ...editForm, semester: e.target.value })} />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Section</label>
+                                                    <input value={editForm.section || ''} onChange={e => setEditForm({ ...editForm, section: e.target.value })} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="detail-section">
+                                        <h4>Performance Metrics</h4>
+                                        {!isEditing ? (
+                                            <>
+                                                <div className="info-row"><span>CGPA:</span> <strong>{selectedMentee.gpa || '0.00'}</strong></div>
+                                                <div className="info-row"><span>Attendance:</span> <strong>{selectedMentee.attendance || '0'}%</strong></div>
+                                                <div className="info-row"><span>Arrears:</span> <strong>0</strong></div>
+                                            </>
+                                        ) : (
+                                            <div className="edit-grid">
+                                                <div className="form-group">
+                                                    <label>CGPA</label>
+                                                    <input type="number" step="0.01" value={editForm.gpa || ''} onChange={e => setEditForm({ ...editForm, gpa: e.target.value })} />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Attendance (%)</label>
+                                                    <input type="number" value={editForm.attendance || ''} onChange={e => setEditForm({ ...editForm, attendance: e.target.value })} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="detail-actions mt-6">
+                                    <h4>Actions</h4>
+                                    {!isEditing ? (
+                                        <div className="action-buttons-row">
+                                            <button className="btn btn-secondary w-full" onClick={() => setIsEditing(true)}>
+                                                <Upload size={16} /> Edit Details
+                                            </button>
+                                            <button className="btn btn-danger w-full" onClick={() => alert(`Report discrepancy for ${selectedMentee.rollNumber} has been logged.`)}>
+                                                <AlertTriangle size={16} /> Report Discrepancy
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="action-buttons-row">
+                                            <button className="btn btn-secondary w-full" onClick={() => setIsEditing(false)}>
+                                                Cancel
+                                            </button>
+                                            <button className="btn btn-success w-full" onClick={handleUpdate} disabled={saving}>
+                                                {saving ? 'Saving...' : 'Save Changes'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-muted mt-2">
+                                        * Use "Edit Details" to correct any discrepancies you find.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        <form onSubmit={handleScheduleMeeting} className="meeting-form">
-                            <div className="form-group">
-                                <label>Meeting Title</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Academic Review"
-                                    required
-                                    value={meetingForm.title}
-                                    onChange={e => setMeetingForm({ ...meetingForm, title: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group text-white">
-                                <label>Date & Time</label>
-                                <input
-                                    type="datetime-local"
-                                    required
-                                    value={meetingForm.startTime}
-                                    onChange={e => setMeetingForm({ ...meetingForm, startTime: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Location / Link</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Cabin 204 or Meet URL"
-                                    required
-                                    value={meetingForm.location}
-                                    onChange={e => setMeetingForm({ ...meetingForm, location: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Notes</label>
-                                <textarea
-                                    placeholder="Brief agenda..."
-                                    value={meetingForm.description}
-                                    onChange={e => setMeetingForm({ ...meetingForm, description: e.target.value })}
-                                ></textarea>
-                            </div>
-                            <button type="submit" className="btn btn-primary w-full" disabled={scheduling}>
-                                {scheduling ? 'Sending Invite...' : 'Schedule & Send Email'}
-                            </button>
-                        </form>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
