@@ -16,6 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 import '../../pages/DashboardOverview.css';
 import './Mentees.css';
+import Pagination from '../../components/Pagination';
 
 const Mentees = () => {
     const { currentUser } = useAuth();
@@ -25,6 +26,10 @@ const Mentees = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [allStudents, setAllStudents] = useState([]);
     const [adding, setAdding] = useState(false);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
 
     // Edit State
     const [isEditing, setIsEditing] = useState(false);
@@ -143,6 +148,18 @@ const Mentees = () => {
         return 'At Risk';
     };
 
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    // Derived Logic
+    const filteredMentees = mentees.filter(m => (m.fullName || "Unknown Student").toLowerCase().includes(searchTerm.toLowerCase()));
+    const paginatedMentees = filteredMentees.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
     if (loading) return <div className="loading-screen"><Loader className="animate-spin" /></div>;
 
     return (
@@ -178,7 +195,7 @@ const Mentees = () => {
             </div>
 
             <div className="mentees-grid">
-                {mentees.filter(m => (m.fullName || "Unknown Student").toLowerCase().includes(searchTerm.toLowerCase())).map(mentee => (
+                {paginatedMentees.map(mentee => (
                     <div key={mentee.id} className="mentee-card glass-card animate-fade-in">
                         <div className="mentee-card-header">
                             <div className="mentee-avatar">
@@ -235,8 +252,16 @@ const Mentees = () => {
                         </div>
                     </div>
                 ))}
-                {mentees.length === 0 && <p className="empty-state">No mentees assigned yet.</p>}
+                {filteredMentees.length === 0 && <p className="empty-state">No mentees assigned yet.</p>}
             </div>
+
+            {filteredMentees.length > itemsPerPage && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(filteredMentees.length / itemsPerPage)}
+                    onPageChange={setCurrentPage}
+                />
+            )}
 
             {showAddModal && (
                 <div className="modal-overlay">
@@ -250,7 +275,7 @@ const Mentees = () => {
                                 allStudents.map(student => (
                                     <div key={student.id} className="student-item">
                                         <div className="student-info">
-                                            <span className="name">{student.fullName}</span>
+                                            <span className="name">{student.fullName} <span style={{ fontSize: '0.8em', opacity: 0.7 }}>({student.rollNumber})</span></span>
                                             <span className="email">{student.email}</span>
                                         </div>
                                         <button

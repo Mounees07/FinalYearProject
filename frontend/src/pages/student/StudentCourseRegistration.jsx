@@ -175,88 +175,92 @@ const StudentCourseRegistration = () => {
                         const changesRemaining = isEnrolled ? 2 - (enrollment.changeCount || 0) : 2;
 
                         return (
-                            <div key={course.id} className={`reg-card ${isEnrolled ? 'enrolled' : ''}`}>
-                                <div className="reg-card-content">
-                                    <div className="course-meta-top">
-                                        <span className="meta-badge">{course.code}</span>
-                                        {isEnrolled && (
-                                            <div className="status-badge-enrolled">
-                                                <CheckCircle size={12} strokeWidth={3} />
-                                                <span>ENROLLED</span>
-                                            </div>
-                                        )}
+                            <div key={course.id} className={`transport-card ${isEnrolled ? 'enrolled' : ''}`}>
+                                <div className="tc-header">
+                                    <div className="tc-info">
+                                        <div className="tc-avatar">
+                                            <BookOpen size={20} />
+                                        </div>
+                                        <div className="tc-details">
+                                            <h4>{course.name}</h4>
+                                            <span>{course.code}</span>
+                                        </div>
                                     </div>
-
-                                    <h2>{course.name}</h2>
-                                    <p className="course-desc">{course.description || "No description available for this course."}</p>
+                                    {isEnrolled ? (
+                                        <div className="tc-status enrolled">Enrolled</div>
+                                    ) : (
+                                        <div className="tc-status pending">Pending</div>
+                                    )}
                                 </div>
 
-                                <div className="reg-card-footer">
-                                    {isEnrolled && locked ? (
-                                        <div className="locked-panel">
-                                            <div className="locked-header">
-                                                <span className="faculty-name-display">
+                                <div className="tc-route">
+                                    {/* Start Point */}
+                                    <div className="route-point">
+                                        <div className="rp-icon"></div>
+                                        <div className="rp-details">
+                                            <div className="rp-title">Course Parameters</div>
+                                            <div className="rp-sub">{course.credits || 3} Credits • {course.type || 'Core'}</div>
+                                        </div>
+                                    </div>
+
+                                    {/* End Point (Selection) */}
+                                    <div className="route-point">
+                                        <div className="rp-icon"></div>
+                                        <div className="rp-details">
+                                            <div className="rp-title">Assigned Faculty</div>
+                                            {isEnrolled && locked ? (
+                                                <div className="rp-sub font-bold text-gray-800">
                                                     {group.sections.find(s => s.id === enrollment.sectionId)?.faculty?.fullName || enrollment.facultyName}
-                                                </span>
-                                                <div className="lock-status warn">
-                                                    <Lock size={12} /> {getRemainingTime(enrollment)}
                                                 </div>
-                                            </div>
-                                            <div className="text-xs text-muted">You can update this selection after the lock period.</div>
+                                            ) : (
+                                                <div className="selection-area">
+                                                    <select
+                                                        className="custom-select"
+                                                        value={selectedSections[course.id] || (isEnrolled ? enrollment.sectionId : "")}
+                                                        onChange={(e) => {
+                                                            setSelectedSections({
+                                                                ...selectedSections,
+                                                                [course.id]: Number(e.target.value)
+                                                            });
+                                                        }}
+                                                        disabled={isEnrolled && changesRemaining === 0}
+                                                    >
+                                                        <option value="" disabled>-- Select Faculty --</option>
+                                                        {group.sections.map(sec => (
+                                                            <option key={sec.id} value={sec.id}>
+                                                                {sec.faculty.fullName}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="tc-footer">
+                                    {isEnrolled && locked ? (
+                                        <div className="lock-status warn">
+                                            <Lock size={12} /> Confirmed {getRemainingTime(enrollment)}
                                         </div>
                                     ) : isEnrolled && changesRemaining === 0 ? (
-                                        <div className="locked-panel">
-                                            <div className="locked-header">
-                                                <span className="faculty-name-display">
-                                                    {group.sections.find(s => s.id === enrollment.sectionId)?.faculty?.fullName || enrollment.facultyName}
-                                                </span>
-                                                <div className="lock-status error">
-                                                    <Lock size={12} /> Final
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-muted">Maximum changes reached. Contact admin for help.</div>
+                                        <div className="lock-status error">
+                                            <Lock size={12} /> Max Changes Reached
                                         </div>
                                     ) : (
-                                        <div className="input-group">
-                                            <div className="input-group-header">
-                                                <label>Select Faculty</label>
-                                                {isEnrolled && (
-                                                    <span className="changes-info">
-                                                        Changes left: {changesRemaining}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <select
-                                                className="custom-select"
-                                                value={selectedSections[course.id] || ""}
-                                                onChange={(e) => {
-                                                    setSelectedSections({
-                                                        ...selectedSections,
-                                                        [course.id]: Number(e.target.value)
-                                                    });
-                                                }}
-                                            >
-                                                <option value="" disabled>-- Choose Preferred Faculty --</option>
-                                                {group.sections.map(sec => (
-                                                    <option key={sec.id} value={sec.id}>
-                                                        {sec.faculty.fullName}
-                                                        {/* Optional: Add seats if available in data */}
-                                                    </option>
-                                                ))}
-                                            </select>
-
-                                            <button
-                                                onClick={() => handleRegister(course.id)}
-                                                className={`btn-confirm ${isEnrolled ? 'btn-update' : ''}`}
-                                            >
-                                                {isEnrolled ? (
-                                                    <> <Edit2 size={16} /> Update Faculty </>
-                                                ) : (
-                                                    <> <CheckCircle size={16} /> Confirm Selection </>
-                                                )}
-                                            </button>
+                                        <div className="text-xs text-gray-500">
+                                            {isEnrolled ? `Changes left: ${changesRemaining}` : 'Select to confirm'}
                                         </div>
+                                    )}
+
+                                    {(!isEnrolled || (isEnrolled && !locked && changesRemaining > 0)) && (
+                                        <button
+                                            onClick={() => handleRegister(course.id)}
+                                            className={`btn-confirm ${isEnrolled ? 'update' : ''}`}
+                                            style={{ width: 'auto', padding: '0.5rem 1rem' }}
+                                        >
+                                            {isEnrolled ? 'Update' : 'Confirm'}
+                                        </button>
                                     )}
                                 </div>
                             </div>
@@ -264,7 +268,7 @@ const StudentCourseRegistration = () => {
                     })
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

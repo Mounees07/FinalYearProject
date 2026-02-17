@@ -76,9 +76,7 @@
 
 /* Explicit Overrides to force Light Theme if variables fail to propagate */
 [data-theme='light'] .glass-card,
-[data-theme='light'] .dash-card,
-[data-theme='light'] .sidebar,
-[data-theme='light'] .navbar {
+[data-theme='light'] .dash-card {
   background-color: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.08) !important;
   color: #1e293b !important;

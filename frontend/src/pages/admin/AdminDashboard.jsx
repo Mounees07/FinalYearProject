@@ -1,58 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { Users, UserCheck, Award, MoreHorizontal, ChevronLeft, ChevronRight, Bell, Calendar as CalendarIcon } from 'lucide-react';
 import {
-    Users,
-    BookOpen,
-    Activity,
-    Settings,
-    BarChart2,
-    Shield
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    LineChart, Line, PieChart, Pie, Cell, Legend
+} from 'recharts';
 import api from '../../utils/api';
-import '../DashboardOverview.css';
 import './Admin.css';
 
 const AdminDashboard = () => {
-    const navigate = useNavigate();
-    const [stats, setStats] = useState({
-        totalUsers: 0,
-        totalCourses: 0,
-        systemHealth: 'Operational'
-    });
+    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                // 1. Fetch Users Count
-                // We'll iterate roles as we did in UserManagement to get a true count
-                const roles = ['STUDENT', 'TEACHER', 'MENTOR', 'HOD', 'ADMIN', 'COE', 'PRINCIPAL'];
-                const userPromises = roles.map(role => api.get(`/users/role/${role}`).catch(() => ({ data: [] })));
-                const userResults = await Promise.all(userPromises);
-                const allUsers = userResults.flatMap(r => r.data);
-                // Deduplicate just in case
-                const uniqueUsers = new Set(allUsers.map(u => u.id || u.firebaseUid)).size;
-
-                // 2. Fetch Courses Count
-                let coursesCount = 0;
-                try {
-                    // Try fetching all courses. If not available, fallback to 0 or mock
-                    const coursesRes = await api.get('/courses/all'); // Assuming this exists or returns list
-                    if (Array.isArray(coursesRes.data)) {
-                        coursesCount = coursesRes.data.length;
-                    }
-                } catch (e) {
-                    // If endpoint doesn't exist, try getting teacher courses if possible, or just 0
-                    console.warn("Could not fetch global course count", e);
-                }
-
-                setStats({
-                    totalUsers: uniqueUsers,
-                    totalCourses: coursesCount,
-                    systemHealth: 'Operational'
-                });
-            } catch (err) {
-                console.error("Dashboard stats error:", err);
+                const response = await api.get('/admin/dashboard-stats');
+                setStats(response.data);
+            } catch (error) {
+                console.error("Error fetching admin stats:", error);
             } finally {
                 setLoading(false);
             }
@@ -60,118 +25,387 @@ const AdminDashboard = () => {
         fetchStats();
     }, []);
 
-    const sections = [
-        { title: 'User Management', icon: <Users size={24} />, desc: 'Manage students, teachers, and staff accounts.', link: '/admin/users', color: '#3b82f6' },
-        { title: 'Course Oversight', icon: <BookOpen size={24} />, desc: 'Review curriculums and course content.', link: '/admin/courses', color: '#10b981' },
-        { title: 'System Settings', icon: <Settings size={24} />, desc: 'Configure platform parameters.', link: '/admin/settings', color: '#6366f1' },
-        { title: 'Institutional Data Repository', icon: <BarChart2 size={24} />, desc: 'View Individual Datas', link: '/admin/reports', color: '#f59e0b' },
+    // --- Data Constants ---
+    // Fallback/Default values or construction from stats state
+    const totalStudents = stats?.totalStudents || 0;
+    const totalTeachers = stats?.totalTeachers || 0;
+    const totalStaff = stats?.totalStaff || 0;
+    const totalAwards = stats?.totalAwards || 0;
+
+    const statsData = [
+        { title: 'Students', value: totalStudents.toLocaleString(), change: '+16%', badgeColor: 'bg-light-purple', badgeText: 'text-purple', iconColor: 'bg-purple', icon: <Users size={24} className="text-white" /> },
+        { title: 'Teachers', value: totalTeachers.toLocaleString(), change: '+3%', badgeColor: 'bg-light-orange', badgeText: 'text-orange', iconColor: 'bg-orange', icon: <UserCheck size={24} className="text-white" /> },
+        { title: 'Staffs', value: totalStaff.toLocaleString(), change: '+3%', badgeColor: 'bg-light-yellow', badgeText: 'text-yellow', iconColor: 'bg-yellow', icon: <Users size={24} className="text-white" /> },
+        { title: 'Awards', value: totalAwards.toLocaleString(), change: '+5%', badgeColor: 'bg-light-blue', badgeText: 'text-blue', iconColor: 'bg-blue', icon: <Award size={24} className="text-white" /> },
     ];
 
+    const studentGenderData = stats?.studentGenderData || [
+        { name: 'Boys', value: 0, color: '#4D44B5' },
+        { name: 'Girls', value: 0, color: '#FCC43E' },
+    ];
+
+    const attendanceData = stats?.attendanceData || [];
+
+    const earningsData = stats?.earningsData || [];
+
+    const [agendaItems, setAgendaItems] = useState([]);
+    const [isAgendaModalOpen, setIsAgendaModalOpen] = useState(false);
+    const [newAgenda, setNewAgenda] = useState({
+        title: '',
+        time: '',
+        type: 'All Grade',
+        colorClass: 'purple'
+    });
+
+    const messages = [
+        { name: 'Dr. Lila Ramirez', time: '9:00 AM', message: 'Please ensure the monthly attendance...' },
+        { name: 'Ms. Heather Morris', time: '10:15 AM', message: 'Don\'t forget the staff training on...' },
+        { name: 'Mr. Carl Jenkins', time: '2:00 PM', message: 'Budget review meeting for the next...' },
+    ];
+
+    // --- Calendar Logic (Dynamic) ---
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(new Date());
+
+    useEffect(() => {
+        const fetchAgenda = async () => {
+            if (!selectedDate) return;
+            try {
+                // ISO date string YYYY-MM-DD
+                const dateStr = selectedDate.toLocaleDateString("en-CA");
+                const res = await api.get(`/agenda?date=${dateStr}`);
+                setAgendaItems(res.data);
+            } catch (err) {
+                console.error("Failed to fetch agenda", err);
+            }
+        };
+        fetchAgenda();
+    }, [selectedDate]);
+
+    const handleAddAgenda = async (e) => {
+        e.preventDefault();
+        try {
+            const dateStr = selectedDate.toLocaleDateString("en-CA");
+            // Standardize time format for display if possible, or just store as is.
+            // Backend expects LocalTime "HH:mm".
+            const payload = {
+                ...newAgenda,
+                date: dateStr // Backend will parse string to LocalDate
+            };
+            await api.post('/agenda', payload);
+            setIsAgendaModalOpen(false);
+            setNewAgenda({ title: '', time: '', type: 'All Grade', colorClass: 'purple' });
+
+            // Refresh
+            const res = await api.get(`/agenda?date=${dateStr}`);
+            setAgendaItems(res.data);
+        } catch (err) {
+            console.error("Failed to add agenda", err);
+        }
+    };
+
+    const currentYear = currentDate.getFullYear();
+    const currentMonthIndex = currentDate.getMonth(); // 0-11
+
+    // Format month name manually or using locale
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const currentMonth = monthNames[currentMonthIndex];
+
+    const daysInCurrentMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
+    const firstDayOfMonth = new Date(currentYear, currentMonthIndex, 1).getDay(); // 0 = Sunday
+
+    // Check if showing current actual month -> to highlight today IF needed, but focus is on selectedDate
+    // const now = new Date();
+    // const realToday = now.getDate();
+
+    // Create array for grid: empty slots for days before 1st, then 1..daysInMonth
+    const calendarDays = [];
+    for (let i = 0; i < firstDayOfMonth; i++) {
+        calendarDays.push('');
+    }
+    for (let i = 1; i <= daysInCurrentMonth; i++) {
+        calendarDays.push(i);
+    }
+    // Fill remaining slots
+    while (calendarDays.length % 7 !== 0) {
+        calendarDays.push('');
+    }
+
+    const prevMonth = () => {
+        setCurrentDate(new Date(currentYear, currentMonthIndex - 1, 1));
+    };
+
+    const nextMonth = () => {
+        setCurrentDate(new Date(currentYear, currentMonthIndex + 1, 1));
+    };
+
+    const handleDayClick = (day) => {
+        if (day !== '') {
+            const newDate = new Date(currentYear, currentMonthIndex, day);
+            setSelectedDate(newDate);
+        }
+    };
+
     if (loading) {
-        return (
-            <div className="dashboard-layout-new">
-                <div className="dashboard-main-col" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                    <div className="loading-spinner"></div>
-                </div>
-            </div>
-        );
+        return <div className="admin-dashboard flex items-center justify-center text-white">Loading Dashboard...</div>;
     }
 
     return (
-        <div className="dashboard-layout-new">
-            <div className="dashboard-main-col">
-                <div className="welcome-banner animate-fade-in">
-                    <div className="banner-content">
-                        <h1>System Administration</h1>
-                        <p>Full control over the educational platform ecosystem. Monitor performance, manage users, and configure system settings.</p>
-                    </div>
-                    <div className="banner-icon">
-                        <Shield size={48} color="white" style={{ opacity: 0.9 }} />
-                    </div>
-                </div>
-
-                <div className="stats-grid animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                    <div className="stat-card glass-card">
-                        <div className="stat-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
-                            <Users size={28} />
-                        </div>
-                        <div className="stat-info">
-                            <span className="stat-value">{stats.totalUsers}</span>
-                            <span className="stat-label">Total Users</span>
-                        </div>
-                    </div>
-                    <div className="stat-card glass-card">
-                        <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
-                            <BookOpen size={28} />
-                        </div>
-                        <div className="stat-info">
-                            <span className="stat-value">{stats.totalCourses}</span>
-                            <span className="stat-label">Active Courses</span>
-                        </div>
-                    </div>
-                    <div className="stat-card glass-card">
-                        <div className="stat-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1' }}>
-                            <Activity size={28} />
-                        </div>
-                        <div className="stat-info">
-                            <span className="stat-value">{stats.systemHealth}</span>
-                            <span className="stat-label">System Health</span>
-                        </div>
-                    </div>
-                </div>
-
-                <h3 className="section-title animate-fade-in" style={{ animationDelay: '0.2s', fontSize: '1.25rem', marginBottom: '1.5rem', marginTop: '1rem' }}>Administration Modules</h3>
-
-                <div className="admin-modules-grid animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                    {sections.map((section, idx) => (
-                        <div key={idx} className="module-card glass-card" onClick={() => navigate(section.link)}>
-                            <div className="module-icon-wrapper" style={{
-                                background: `${section.color}20`,
-                                color: section.color,
-                                boxShadow: `0 0 20px ${section.color}10`
-                            }}>
-                                {section.icon}
-                            </div>
-                            <div className='module-content'>
-                                <h4>{section.title}</h4>
-                                <p>{section.desc}</p>
-                            </div>
-                        </div>
-                    ))}
+        <div className="admin-dashboard">
+            {/* ... Header and Stats Grid ... */}
+            <div className="admin-header">
+                <div>
+                    <h1 className="admin-title">Admin Dashboard</h1>
+                    <p className="admin-subtitle">Welcome back, Admin</p>
                 </div>
             </div>
 
-            <div className="dashboard-sidebar-col animate-fade-in" style={{ animationDelay: '0.4s' }}>
-                <div className="dash-card profile-summary-card">
-                    <h3 style={{ marginBottom: '20px', fontSize: '1.1rem' }}>Quick Actions</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <button className="btn btn-primary w-full" onClick={() => navigate('/admin/users')}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                <Users size={16} /> Create New User
+            {/* Top Stats Cards */}
+            <div className="stats-grid">
+                {statsData.map((stat, index) => (
+                    <div key={index} className="admin-card">
+                        <div className="stat-card-header">
+                            <span className={`stat-badge ${stat.badgeColor} ${stat.badgeText}`}>
+                                {stat.change}
+                            </span>
+                            <div className={`stat-icon-wrapper ${stat.iconColor}`}>
+                                {stat.icon}
                             </div>
-                        </button>
-                        <button className="btn btn-secondary w-full" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-                            System Broadcast (Soon)
-                        </button>
-                        <button className="btn btn-secondary w-full" onClick={() => navigate('/admin/settings')}>
-                            View Audit Logs
-                        </button>
+                        </div>
+
+                        <div>
+                            <h3 className="stat-value">{stat.value}</h3>
+                            <p className="stat-title">{stat.title}</p>
+                        </div>
+
+                        {/* Decorative Background Circle */}
+                        <div className={`stat-decor-circle ${stat.iconColor}`}></div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="main-content-grid">
+                {/* Left Column (Charts) - keeping as is, focusing on calendar below */}
+                <div className="charts-column">
+                    {/* ... Charts ... */}
+                    <div className="charts-row">
+                        {/* Students Pie Chart */}
+                        <div className="admin-card">
+                            <div className="card-header">
+                                <h3 className="card-title">Students</h3>
+                                <MoreHorizontal size={20} className="more-icon" />
+                            </div>
+                            <div style={{ height: '250px', position: 'relative' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={studentGenderData}
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {studentGenderData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Legend verticalAlign="bottom" height={36} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', paddingBottom: '32px' }}>
+                                    <Users size={32} color="#94a3b8" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Attendance Bar Chart */}
+                        <div className="admin-card">
+                            <div className="card-header">
+                                <h3 className="card-title">Attendance</h3>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-subtle)', padding: '4px 12px', borderRadius: '99px' }}>Weekly</div>
+                            </div>
+                            <div style={{ height: '250px' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={attendanceData} barSize={12}>
+                                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--glass-border)" />
+                                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#A098AE' }} dy={10} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#A098AE' }} />
+                                        <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--glass-border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} itemStyle={{ color: 'var(--text-primary)' }} />
+                                        <Legend iconType="circle" />
+                                        <Bar dataKey="present" name="Present" fill="#FCC43E" radius={[10, 10, 10, 10]} />
+                                        <Bar dataKey="absent" name="Absent" fill="#4D44B5" radius={[10, 10, 10, 10]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Earnings Chart */}
+                    <div className="admin-card">
+                        <div className="card-header">
+                            <h3 className="card-title">Earnings</h3>
+                            <MoreHorizontal size={20} className="more-icon" />
+                        </div>
+                        <div style={{ height: '250px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={earningsData}>
+                                    <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--glass-border)" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#A098AE' }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#A098AE' }} />
+                                    <Tooltip contentStyle={{ backgroundColor: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--glass-border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} itemStyle={{ color: 'var(--text-primary)' }} />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="income" stroke="#4D44B5" strokeWidth={3} dot={{ r: 4, fill: '#4D44B5', strokeWidth: 2, stroke: '#fff' }} />
+                                    <Line type="monotone" dataKey="expense" stroke="#FB7D5B" strokeWidth={3} dot={{ r: 4, fill: '#FB7D5B', strokeWidth: 2, stroke: '#fff' }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
 
-                {/* System Info Widget */}
-                <div className="dash-card glass-card" style={{ marginTop: '20px', padding: '20px' }}>
-                    <h3 style={{ marginBottom: '16px', fontSize: '1rem', color: 'var(--text-secondary)' }}>Server Status</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></div>
-                        <span style={{ fontSize: '0.9rem', color: '#fff' }}>Database: Connected</span>
+                <div className="widgets-column">
+                    {/* Calendar Widget */}
+                    <div className="admin-card">
+                        <div className="card-header">
+                            <h3 className="card-title">{currentMonth} {currentYear}</h3>
+                            <div className="calendar-header-nav">
+                                <ChevronLeft size={20} className="calendar-nav-icon" onClick={prevMonth} />
+                                <ChevronRight size={20} className="calendar-nav-icon" onClick={nextMonth} />
+                            </div>
+                        </div>
+                        <div className="calendar-grid-header">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                <div key={day} className="calendar-day-label">{day}</div>
+                            ))}
+                        </div>
+                        <div className="calendar-grid-body">
+                            {calendarDays.map((day, i) => {
+                                // Check if this day is selected
+                                const isSelected =
+                                    selectedDate.getDate() === day &&
+                                    selectedDate.getMonth() === currentMonthIndex &&
+                                    selectedDate.getFullYear() === currentYear;
+
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`calendar-day ${day !== '' && isSelected ? 'active' : ''}`}
+                                        onClick={() => handleDayClick(day)}
+                                    >
+                                        {day}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></div>
-                        <span style={{ fontSize: '0.9rem', color: '#fff' }}>Gateway: Online</span>
+
+                    {/* Agenda Widget */}
+                    <div className="admin-card">
+                        <div className="card-header">
+                            <h3 className="card-title">Agenda</h3>
+                            <button className="add-btn" onClick={() => setIsAgendaModalOpen(true)}>+</button>
+                        </div>
+                        <div className="agenda-list">
+                            {agendaItems.length === 0 ? (
+                                <p className="text-muted text-sm text-center">No agenda for this day.</p>
+                            ) : (
+                                agendaItems.map((item, index) => (
+                                    <div key={index} className="agenda-item">
+                                        <div className="agenda-timeline">
+                                            <div className={`timeline-dot border-${item.colorClass || 'purple'}`}></div>
+                                            {index !== agendaItems.length - 1 && <div className="timeline-line"></div>}
+                                        </div>
+                                        <div className="agenda-content">
+                                            <p className="agenda-time">{item.time}</p>
+                                            <h4 className="agenda-title">{item.title}</h4>
+                                            <span className={`agenda-tag bg-light-${item.colorClass || 'purple'} text-${item.colorClass || 'purple'}`}>
+                                                {item.type}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )))}
+                        </div>
                     </div>
+
+                    {/* Messages Widget */}
+                    <div className="admin-card">
+                        <div className="card-header">
+                            <h3 className="card-title">Messages</h3>
+                            <span className="view-all-link">View All</span>
+                        </div>
+                        <div className="messages-list">
+                            {messages.map((msg, index) => (
+                                <div key={index} className="message-item">
+                                    <div className="message-avatar-wrapper">
+                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.name}`} alt="avatar" />
+                                    </div>
+                                    <div className="message-content">
+                                        <div className="message-header">
+                                            <h4 className="message-sender">{msg.name}</h4>
+                                            <span className="message-time">{msg.time}</span>
+                                        </div>
+                                        <p className="message-preview">{msg.message}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
+            {/* Add Agenda Modal */}
+            {isAgendaModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3>Add Agenda - {selectedDate.toLocaleDateString()}</h3>
+                        <form onSubmit={handleAddAgenda}>
+                            <div className="form-group">
+                                <label>Title</label>
+                                <input
+                                    type="text"
+                                    value={newAgenda.title}
+                                    onChange={e => setNewAgenda({ ...newAgenda, title: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Time</label>
+                                <input
+                                    type="time"
+                                    value={newAgenda.time}
+                                    onChange={e => setNewAgenda({ ...newAgenda, time: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Type</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. All Grade"
+                                    value={newAgenda.type}
+                                    onChange={e => setNewAgenda({ ...newAgenda, type: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Color Code</label>
+                                <select
+                                    value={newAgenda.colorClass}
+                                    onChange={e => setNewAgenda({ ...newAgenda, colorClass: e.target.value })}
+                                >
+                                    <option value="purple">Purple</option>
+                                    <option value="orange">Orange</option>
+                                    <option value="blue">Blue</option>
+                                    <option value="yellow">Yellow</option>
+                                </select>
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" onClick={() => setIsAgendaModalOpen(false)}>Cancel</button>
+                                <button type="submit" className="primary-btn">Add Agenda</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

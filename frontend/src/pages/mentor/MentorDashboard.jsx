@@ -62,17 +62,39 @@ const MentorDashboard = () => {
                 const menteesRes = await api.get(`/users/mentees/${currentUser.uid}`);
                 const mentees = menteesRes.data;
 
+                const meetingsRes = await api.get(`/meetings/mentor/${currentUser.uid}`);
+                const meetings = meetingsRes.data;
+
+                // Process Pending Meetings for Today
+                const today = new Date().toDateString();
+                const pendingCount = meetings.filter(m =>
+                    m.status === 'SCHEDULED' && new Date(m.startTime).toDateString() === today
+                ).length;
+
                 setRecentMentees(mentees.slice(0, 3));
-                const atRisk = mentees.filter(m => (m.gpa && m.gpa < 2.5) || (m.attendance && m.attendance < 75));
+                const atRisk = mentees.filter(m => (m.gpa && m.gpa < 5.0) || (m.attendance && m.attendance < 75));
                 setAtRiskStudents(atRisk);
 
                 if (mentees.length > 0) {
-                    const totalGpa = mentees.reduce((acc, m) => acc + (m.gpa || 3.0), 0);
-                    setStats(prev => ({
-                        ...prev,
+                    const totalGpa = mentees.reduce((acc, m) => acc + (m.gpa || 0), 0);
+                    // Mock success rate based on mentees with > 5.0 GPA (assuming 10 scale) or Arrears = 0
+                    // If no GPA data, default to high success
+                    const successfulMentees = mentees.filter(m => (m.gpa || 10) >= 5.0 && (m.arrearCount || 0) === 0).length;
+                    const successRate = Math.round((successfulMentees / mentees.length) * 100);
+
+                    setStats({
                         menteeCount: mentees.length,
-                        avgGpa: (totalGpa / mentees.length).toFixed(2)
-                    }));
+                        pendingMeetings: pendingCount,
+                        avgGpa: (mentees.length ? (totalGpa / mentees.length).toFixed(2) : "0.00"),
+                        successRate: successRate
+                    });
+                } else {
+                    setStats({
+                        menteeCount: 0,
+                        pendingMeetings: pendingCount,
+                        avgGpa: "0.00",
+                        successRate: 0
+                    });
                 }
 
             } catch (err) {

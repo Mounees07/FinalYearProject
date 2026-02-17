@@ -11,6 +11,7 @@ import {
     ToggleRight
 } from 'lucide-react';
 import './Admin.css';
+import api from '../../utils/api';
 
 const AdminSettings = () => {
     const [settings, setSettings] = useState({
@@ -44,13 +45,10 @@ const AdminSettings = () => {
     React.useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const token = JSON.parse(localStorage.getItem('user')).token;
-                const response = await fetch('http://localhost:8080/api/admin/settings', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const response = await api.get('/admin/settings');
 
-                if (response.ok) {
-                    const data = await response.json();
+                if (response.data) {
+                    const data = response.data;
                     setSettings(prev => ({
                         ...prev,
                         ...data,
@@ -87,7 +85,6 @@ const AdminSettings = () => {
     const handleSave = async () => {
         setLoading(true);
         try {
-            const token = JSON.parse(localStorage.getItem('user')).token;
             // Convert booleans to strings for backend storage
             const payload = {
                 ...settings,
@@ -104,23 +101,15 @@ const AdminSettings = () => {
                 'report.export.enabled': String(settings['report.export.enabled'])
             };
 
-            const response = await fetch('http://localhost:8080/api/admin/settings', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+            const response = await api.post('/admin/settings', payload);
 
-            if (response.ok) {
+            if (response.status === 200) {
                 alert("Settings saved successfully!");
-            } else {
-                alert("Failed to save settings");
             }
         } catch (error) {
             console.error(error);
-            alert("Error saving settings");
+            const msg = error.response?.data?.message || error.message;
+            alert("Error saving settings: " + msg);
         } finally {
             setLoading(false);
         }
@@ -356,13 +345,9 @@ const AuditLogViewer = () => {
     React.useEffect(() => {
         const fetchLogs = async () => {
             try {
-                const token = JSON.parse(localStorage.getItem('user')).token;
-                const response = await fetch('http://localhost:8080/api/admin/auditlogs', { // Corrected URL
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setLogs(data);
+                const response = await api.get('/admin/auditlogs');
+                if (response.data) {
+                    setLogs(response.data);
                 }
             } catch (err) {
                 console.error("Error fetching logs", err);

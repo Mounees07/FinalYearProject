@@ -48,31 +48,47 @@ const StudentCourses = () => {
                     enrollments.map(enrollment => {
                         if (!enrollment.section) return null;
                         return (
-                            <div key={enrollment.id} className="course-card glass-card">
-                                <div className="course-header">
-                                    <div className="course-code">{enrollment.section.course?.code || 'N/A'}</div>
-                                    <h2>{enrollment.section.course?.name || 'Untitled Course'}</h2>
-                                </div>
-
-                                <div className="course-details">
-                                    <div className="detail-item">
-                                        <User size={16} />
-                                        <span>{enrollment.section.faculty?.fullName || 'Unknown Faculty'}</span>
+                            <div key={enrollment.id} className="transport-card">
+                                <div className="tc-header">
+                                    <div className="tc-user-info">
+                                        <div className="tc-avatar">
+                                            <BookOpen size={20} />
+                                        </div>
+                                        <div className="tc-user-details">
+                                            <h4>{enrollment.section.course?.name || 'Untitled Course'}</h4>
+                                            <span>{enrollment.section.course?.code || 'N/A'}</span>
+                                        </div>
                                     </div>
-                                    <div className="detail-item">
-                                        <Calendar size={16} />
-                                        <span>{enrollment.section.semester} {enrollment.section.year}</span>
+                                    <div className="tc-status enrolled">Enrolled</div>
+                                </div>
+
+                                <div className="tc-route">
+                                    {/* Start Point - Semester Info */}
+                                    <div className="route-point">
+                                        <div className="rp-icon start"></div>
+                                        <div className="rp-details">
+                                            <div className="rp-title">Semester {enrollment.section.semester}</div>
+                                            <div className="rp-sub">Academic Year {enrollment.section.year}</div>
+                                        </div>
+                                    </div>
+
+                                    {/* End Point - Faculty Info */}
+                                    <div className="route-point">
+                                        <div className="rp-icon end"></div>
+                                        <div className="rp-details">
+                                            <div className="rp-title">{enrollment.section.faculty?.fullName || 'Unknown Faculty'}</div>
+                                            <div className="rp-sub">Course Instructor</div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="course-description">
-                                    {enrollment.section.course?.description || 'No description provided.'}
-                                </div>
-
-                                <div className="course-footer">
-                                    <span className="credits-badge">{enrollment.section.course?.credits || 0} Credits</span>
+                                <div className="tc-footer">
+                                    <div className="footer-item">
+                                        <Clock size={14} className="mr-2" />
+                                        <span>{enrollment.section.course?.credits || 0} Credits</span>
+                                    </div>
                                     <button
-                                        className="btn btn-sm btn-primary"
+                                        className="footer-btn"
                                         onClick={() => navigate(`/student/courses/${enrollment.section.id}`)}
                                     >
                                         View Content

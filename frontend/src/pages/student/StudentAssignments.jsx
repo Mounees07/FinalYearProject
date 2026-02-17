@@ -3,6 +3,7 @@ import { FileText, Clock, CheckCircle, AlertCircle, Upload } from 'lucide-react'
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import './StudentAssignments.css';
+import Pagination from '../../components/Pagination';
 
 const StudentAssignments = () => {
     const { currentUser } = useAuth();
@@ -82,8 +83,21 @@ const StudentAssignments = () => {
         }
     };
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
+    // Reset page when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter]);
+
     const filteredAssignments = filter === 'ALL' ? assignments : assignments.filter(a =>
         filter === 'PENDING' ? (a.status === 'PENDING' || a.status === 'OVERDUE') : a.status === 'SUBMITTED'
+    );
+
+    const paginatedAssignments = filteredAssignments.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
     );
 
     if (loading) return <div className="p-8 text-center">Loading assignments...</div>;
@@ -109,14 +123,14 @@ const StudentAssignments = () => {
             </header>
 
             <div className="assignments-list">
-                {filteredAssignments.length === 0 ? (
+                {paginatedAssignments.length === 0 ? (
                     <div className="empty-state">
                         <FileText size={48} className="text-gray-400 mb-4" />
                         <h3>No Assignments Found</h3>
                         <p>You're all caught up!</p>
                     </div>
                 ) : (
-                    filteredAssignments.map(assignment => (
+                    paginatedAssignments.map(assignment => (
                         <div key={assignment.id} className={`assignment-item glass-card status-${assignment.status.toLowerCase()}`}>
                             <div className="assignment-left">
                                 <div className={`status-indicator ${assignment.status.toLowerCase()}`}>
@@ -158,6 +172,14 @@ const StudentAssignments = () => {
                     ))
                 )}
             </div>
+
+            {filteredAssignments.length > itemsPerPage && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={Math.ceil(filteredAssignments.length / itemsPerPage)}
+                    onPageChange={setCurrentPage}
+                />
+            )}
         </div>
     );
 };

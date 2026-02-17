@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
     LayoutDashboard,
     BookOpen,
-    Calendar,
+    Calendar as CalendarIcon,
     ClipboardList,
     UserCheck,
     Bell,
@@ -13,89 +13,89 @@ import {
     FileText,
     ShieldCheck,
     TrendingUp,
-    Plus,
     ClipboardCheck,
-    MapPin
+    User,
+    Bird,
+    DollarSign,
+    MessageCircle,
+    LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import './Sidebar.css';
 
 const Sidebar = () => {
     const { userData } = useAuth();
 
     const studentLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
-        { to: '/student/courses', icon: <BookOpen size={20} />, label: 'My Courses' },
-        { to: '/student/course-registration', icon: <Plus size={20} />, label: 'Choose Faculty' },
-        { to: '/schedule', icon: <Calendar size={20} />, label: 'Schedule' },
-        { to: '/student/assignments', icon: <ClipboardList size={20} />, label: 'Assignments' },
-        { to: '/student/exam-seating', icon: <MapPin size={20} />, label: 'Exam Seating' },
-        { to: '/student/leaves', icon: <FileText size={20} />, label: 'Leave Status' },
-        { to: '/attendance', icon: <UserCheck size={20} />, label: 'Attendance' },
-        { to: '/student/results', icon: <GraduationCap size={20} />, label: 'Results' },
-        { to: '/academic-calendar', icon: <Calendar size={20} />, label: 'Academic Calendar' },
+        { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Overview' },
+        { to: '/student/academic', icon: <BookOpen size={22} />, label: 'Academic' },
+        { to: '/student/leaves', icon: <FileText size={22} />, label: 'Leave Status' },
+        { to: '/attendance', icon: <UserCheck size={22} />, label: 'Attendance' },
+        { to: '/academic-calendar', icon: <CalendarIcon size={22} />, label: 'Academic Calendar' },
     ];
 
     const teacherLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
-        { to: '/teacher/courses', icon: <BookOpen size={20} />, label: 'My Courses' },
-        { to: '/mentees', icon: <Users size={20} />, label: 'My Mentees' },
-        { to: '/marking-attendance', icon: <UserCheck size={20} />, label: 'Attendance' },
-        { to: '/grading', icon: <ClipboardList size={20} />, label: 'Grading' },
-        { to: '/study-materials', icon: <FileText size={20} />, label: 'Materials' },
-        { to: '/meetings', icon: <Calendar size={20} />, label: 'Meetings' },
-        { to: '/schedule', icon: <Calendar size={20} />, label: 'Schedule' },
+        { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Overview' },
+        { to: '/teacher/courses', icon: <BookOpen size={22} />, label: 'My Courses' },
+        { to: '/mentees', icon: <Users size={22} />, label: 'My Mentees' },
+        { to: '/marking-attendance', icon: <UserCheck size={22} />, label: 'Attendance' },
+        { to: '/grading', icon: <ClipboardList size={22} />, label: 'Grading' },
+        { to: '/study-materials', icon: <FileText size={22} />, label: 'Materials' },
+        { to: '/meetings', icon: <CalendarIcon size={22} />, label: 'Meetings' },
+        { to: '/schedule', icon: <CalendarIcon size={22} />, label: 'Schedule' },
     ];
 
     const mentorLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
-        { to: '/mentees', icon: <Users size={20} />, label: 'My Mentees' },
-        { to: '/mentor/leaves', icon: <ClipboardList size={20} />, label: 'Leave Approvals' },
-        { to: '/mentor/attendance', icon: <UserCheck size={20} />, label: 'Mentee Attendance' },
-        { to: '/performance-reports', icon: <TrendingUp size={20} />, label: 'Performance' },
-        { to: '/meetings', icon: <Calendar size={20} />, label: 'Meetings' },
-        { to: '/teacher/courses', icon: <BookOpen size={20} />, label: 'My Courses' }, // Points to same catalog
-        { to: '/schedule', icon: <Calendar size={20} />, label: 'Schedule' },
+        { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Overview' },
+        { to: '/mentees', icon: <Users size={22} />, label: 'My Mentees' },
+        { to: '/mentor/leaves', icon: <ClipboardList size={22} />, label: 'Leave Approvals' },
+        { to: '/mentor/attendance', icon: <UserCheck size={22} />, label: 'Mentee Attendance' },
+        { to: '/performance-reports', icon: <TrendingUp size={22} />, label: 'Performance' },
+        { to: '/meetings', icon: <CalendarIcon size={22} />, label: 'Meetings' },
+        { to: '/teacher/courses', icon: <BookOpen size={22} />, label: 'My Courses' },
+        { to: '/schedule', icon: <CalendarIcon size={22} />, label: 'Schedule' },
     ];
 
     const hodLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Department' },
-        { to: '/mentorship-management', icon: <UserCheck size={20} />, label: 'Mentorship' },
-        { to: '/faculty-management', icon: <Users size={20} />, label: 'Faculty' },
-        { to: '/curriculum', icon: <BookOpen size={20} />, label: 'Curriculum' },
-        { to: '/department-analytics', icon: <TrendingUp size={20} />, label: 'Analytics' },
-        { to: '/hod/schedule-upload', icon: <Calendar size={20} />, label: 'Class Timetable' },
-        { to: '/schedule', icon: <Calendar size={20} />, label: 'View Schedule' },
-        { to: '/hod/meetings', icon: <Calendar size={20} />, label: 'Faculty Meetings' },
-        { to: '/announcements', icon: <Bell size={20} />, label: 'Notices' },
+        { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Department' },
+        { to: '/mentorship-management', icon: <UserCheck size={22} />, label: 'Mentorship' },
+        { to: '/faculty-management', icon: <Users size={22} />, label: 'Faculty' },
+        { to: '/curriculum', icon: <BookOpen size={22} />, label: 'Curriculum' },
+        { to: '/department-analytics', icon: <TrendingUp size={22} />, label: 'Analytics' },
+        { to: '/hod/schedule-upload', icon: <CalendarIcon size={22} />, label: 'Class Timetable' },
+        { to: '/schedule', icon: <CalendarIcon size={22} />, label: 'View Schedule' },
+        { to: '/hod/meetings', icon: <CalendarIcon size={22} />, label: 'Faculty Meetings' },
+        { to: '/announcements', icon: <Bell size={22} />, label: 'Notices' },
     ];
 
     const principalLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Institution' },
-        { to: '/hr-management', icon: <Users size={20} />, label: 'HR Management' },
-        { to: '/campus-analytics', icon: <TrendingUp size={20} />, label: 'Campus Broad' },
-        { to: '/compliance', icon: <ShieldCheck size={20} />, label: 'Compliance' },
-        { to: '/executive-reports', icon: <FileText size={20} />, label: 'Reports' },
+        { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Institution' },
+        { to: '/hr-management', icon: <Users size={22} />, label: 'HR Management' },
+        { to: '/campus-analytics', icon: <TrendingUp size={22} />, label: 'Campus Broad' },
+        { to: '/compliance', icon: <ShieldCheck size={22} />, label: 'Compliance' },
+        { to: '/executive-reports', icon: <FileText size={22} />, label: 'Reports' },
     ];
 
     const adminLinks = [
-        { to: '/admin/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
-        { to: '/admin/users', icon: <Users size={20} />, label: 'User Management' },
-        { to: '/admin/courses', icon: <BookOpen size={20} />, label: 'All Courses' },
-        { to: '/system-config', icon: <Settings size={20} />, label: 'Configuration' },
+        { to: '/admin/dashboard', icon: <LayoutDashboard size={22} />, label: 'Dashboard' },
+        { to: '/admin/students', icon: <GraduationCap size={22} />, label: 'Students' },
+        { to: '/admin/users', icon: <Users size={22} />, label: 'Teachers' }, // Rename User Mgmt to Teachers for now to closer match image
+        { to: '/calendar', icon: <CalendarIcon size={22} />, label: 'Calendar' },
+        { to: '/admin/courses', icon: <BookOpen size={22} />, label: 'Course Management' },
+        { to: '/admin/reports', icon: <FileText size={22} />, label: 'Reports' },
+        { to: '/admin/settings', icon: <Settings size={22} />, label: 'System Settings' },
     ];
 
     const coeLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
-        { to: '/coe/schedule-exams', icon: <Calendar size={20} />, label: 'Exam Schedule' },
-        { to: '/coe/seating-allocation', icon: <Users size={20} />, label: 'Seating Allocation' },
-        { to: '/coe/publish-results', icon: <ClipboardCheck size={20} />, label: 'Publish Results' },
+        { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Overview' },
+        { to: '/coe/schedule-exams', icon: <CalendarIcon size={22} />, label: 'Exam Schedule' },
+        { to: '/coe/seating-allocation', icon: <Users size={22} />, label: 'Seating Allocation' },
+        { to: '/coe/publish-results', icon: <ClipboardCheck size={22} />, label: 'Publish Results' },
     ];
 
     const gateSecurityLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Overview' },
-        { to: '/gate/visitor-log', icon: <ClipboardList size={20} />, label: 'Visitor Log' },
-        { to: '/gate/student-entry', icon: <UserCheck size={20} />, label: 'Student Entry' },
+        { to: '/dashboard', icon: <LayoutDashboard size={22} />, label: 'Overview' },
+        { to: '/gate/visitor-log', icon: <ClipboardList size={22} />, label: 'Visitor Log' },
+        { to: '/gate/student-entry', icon: <UserCheck size={22} />, label: 'Student Entry' },
     ];
 
     const getLinksByRole = (role) => {
@@ -108,35 +108,70 @@ const Sidebar = () => {
             case 'ADMIN': return adminLinks;
             case 'COE': return coeLinks;
             case 'GATE_SECURITY': return gateSecurityLinks;
-            default: return studentLinks;
+            default: return [];
         }
     };
 
     const links = getLinksByRole(userData?.role);
 
     return (
-        <aside className="sidebar glass-card">
-            <div className="sidebar-header">
-                <div className="logo-container">
-                    <GraduationCap className="logo-icon" />
-                    <span className="logo-text">AcaSync</span>
+        <aside className="fixed left-6 top-6 bottom-6 w-20 bg-white dark:bg-[#1e1e1e] rounded-[32px] shadow-2xl flex flex-col items-center py-8 z-50 transition-all duration-300 border border-white/20 dark:border-gray-800">
+            {/* Logo Icon */}
+            <div className="mb-10">
+                <div className="w-12 h-12 bg-[#6366F1] rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white transform hover:scale-105 transition-transform duration-200 cursor-pointer" onClick={() => window.location.href = '/'}>
+                    <GraduationCap size={28} />
                 </div>
             </div>
 
-            <nav className="sidebar-nav">
+            {/* Navigation Icons */}
+            <div className="flex-1 w-full px-2 flex flex-col items-center gap-6 overflow-y-auto no-scrollbar">
                 {links.map((link) => (
                     <NavLink
-                        key={link.to || link.label}
+                        key={link.to}
                         to={link.to}
-                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                        className={({ isActive }) => `
+                            relative group flex items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300
+                            ${isActive
+                                ? 'bg-[#EEF2FF] text-[#6366F1] shadow-md dark:bg-indigo-500/20 dark:text-indigo-400'
+                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-800'}
+                        `}
                     >
                         {link.icon}
-                        <span>{link.label}</span>
+
+                        {/* Hover Tooltip */}
+                        <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-all duration-200 transform translate-x-[-10px] group-hover:translate-x-0 z-[60] shadow-xl">
+                            {link.label}
+                            {/* Little arrow pointing left */}
+                            <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                        </div>
                     </NavLink>
                 ))}
-            </nav>
+            </div>
 
+            {/* Bottom Section (Settings/Logout) */}
+            <div className="mt-auto w-full px-2 flex flex-col items-center gap-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <NavLink to="/profile" className={({ isActive }) => `
+                    relative group flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-all duration-200
+                    ${isActive ? 'text-[#6366F1] bg-indigo-50 dark:text-indigo-400' : ''}
+                `}>
+                    <User size={20} />
+                    <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-all duration-200 z-[60] shadow-xl">
+                        Profile
+                        <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </NavLink>
 
+                <div
+                    onClick={() => window.location.href = '/login'}
+                    className="group relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 cursor-pointer"
+                >
+                    <LogOut size={20} />
+                    <div className="absolute left-full ml-4 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-all duration-200 z-[60] shadow-xl">
+                        Logout
+                        <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+            </div>
         </aside>
     );
 };

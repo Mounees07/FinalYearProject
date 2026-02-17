@@ -1,0 +1,79 @@
+.pagination-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px;
+    background: transparent;
+    font-family: var(--font-main, 'Inter', sans-serif);
+}
+
+.pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    color: var(--text-primary, #ffffff);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.pagination-numbers {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pagination-number {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #64748b);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-number:hover {
+    color: var(--text-primary, #ffffff);
+}
+
+.pagination-number.active {
+    background-color: var(--text-primary, #ffffff);
+    color: var(--bg-deep, #0f172a);
+    /* Invert for active state */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Light Mode Override if applicable to match the white image design specifically */
+[data-theme='light'] .pagination-number.active {
+    background-color: #0f172a;
+    /* Dark circle */
+    color: #ffffff;
+    /* White text */
+}
+
+[data-theme='light'] .pagination-btn:hover:not(:disabled),
+[data-theme='light'] .pagination-number:hover {
+    color: #0f172a;
+}

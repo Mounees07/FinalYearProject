@@ -35,7 +35,18 @@ export const AuthProvider = ({ children }) => {
     const loginWithEmail = async (email, password) => {
         setError("");
         try {
-            return await signInWithEmailAndPassword(auth, email, password);
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            // Force immediate user data refresh after login
+            if (result.user) {
+                try {
+                    const response = await api.get(`/users/${result.user.uid}`);
+                    setUserData(response.data);
+                    console.log("✅ User data refreshed after login:", response.data);
+                } catch (err) {
+                    console.error("Failed to fetch user data after login:", err);
+                }
+            }
+            return result;
         } catch (err) {
             setError(err.message);
             throw err;
@@ -127,11 +138,38 @@ export const AuthProvider = ({ children }) => {
         return sendPasswordResetEmail(auth, email);
     };
 
+    const [systemSettings, setSystemSettings] = useState({});
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                // Fetch public features without auth first, or use a public endpoint
+                const res = await api.get('/admin/settings/public/features');
+                // Wait, I created it at /api/admin/settings/public/features ??
+                // Controller mapping is @RequestMapping("/api/admin/settings")
+                // Method mapping is @GetMapping("/public/features")
+                // So URL is /api/admin/settings/public/features
+                setSystemSettings(res.data);
+            } catch (err) {
+                console.error("Failed to fetch system settings", err);
+                // Fallback to defaults if fetch fails
+                setSystemSettings({
+                    'feature.leave.enabled': 'true',
+                    'feature.result.enabled': 'true',
+                    'feature.analytics.enabled': 'true',
+                    'feature.messaging.enabled': 'true'
+                });
+            }
+        };
+        fetchSettings();
+    }, []);
+
     const value = {
         currentUser,
         userData,
         loading,
         error,
+        systemSettings, // Expose settings
         loginWithGoogle,
         loginWithEmail,
         signupWithEmail,

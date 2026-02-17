@@ -1,82 +1,34 @@
+/* Sidebar.css - SchoolHub Design Clean Up */
+
+/* Remove default heavy styles, allow utility classes to control layout */
 .sidebar {
-    width: 260px;
-    height: calc(100vh - 40px);
-    margin: 20px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 100;
+    /* Minimal shadow for depth */
+    box-shadow: 1px 0 10px rgba(0, 0, 0, 0.03);
 }
 
-.sidebar-header {
-    margin-bottom: 40px;
+/* Logo Badge Animation */
+.logo-badge {
+    animation: bounce 2s infinite;
 }
 
-.logo-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
 }
 
-.logo-icon {
-    color: var(--primary);
-    width: 32px;
-    height: 32px;
+/* Hide Scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
 }
 
-.logo-text {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.sidebar-nav {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.nav-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    color: var(--text-secondary);
-    text-decoration: none;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
-
-[data-theme='light'] .nav-link {
-    color: #475569;
-    /* Slate 600 explicitly */
-    font-weight: 600;
-    /* Slightly bolder for visibility */
-}
-
-.nav-link:hover {
-    background: var(--bg-subtle);
-    color: var(--text-primary);
-}
-
-[data-theme='light'] .nav-link:hover {
-    background: #f1f5f9;
-    /* Slate 100 */
-    color: #0f172a;
-    /* Slate 900 */
-}
-
-.nav-link.active {
-    background: linear-gradient(135deg, var(--primary), var(--accent));
-    color: white;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
