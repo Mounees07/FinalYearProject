@@ -1,0 +1,505 @@
+/* Teacher.css - Enhanced Professional Dashboard */
+
+/* Inherit from global dashboard layout but specific to Teacher needs */
+.teacher-premium {
+    font-family: var(--font-main);
+    color: var(--text-primary);
+}
+
+/* --- HEADER SECTION --- */
+/* The layout for the header is handled by 'page-header' class in global stats,
+   but we can refine the internal typography here. */
+.header-greeting h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #fff 30%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+}
+
+[data-theme='light'] .header-greeting h1 {
+    background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header-greeting p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 600px;
+}
+
+/* Date Badge in Header */
+.header-date {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.6rem 1.2rem;
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-subtle);
+}
+
+/* --- STATS GRID --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.3);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Stat Icons with Glow */
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.stat-icon.courses {
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+}
+
+.stat-icon.attendance {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+}
+
+.stat-icon.gpa {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+}
+
+.stat-icon.tasks {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-info .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.stat-info .value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.1;
+}
+
+[data-theme='light'] .stat-info .value {
+    color: #0f172a !important;
+    /* Force dark slate for values in light mode */
+}
+
+/* Ensure stat card itself is white in light mode */
+[data-theme='light'] .stat-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.stat-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-badge.positive {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+/* --- MONITORED COURSES --- */
+/* The layout logic is handled via Tailwind mostly in the JSX, 
+   but specific hover effects can be reinforced here */
+.glass-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+}
+
+/* --- LAYOUT GRID --- */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.main-content-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* --- CHART SECTION --- */
+.chart-section {
+    padding: 1.5rem;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.card-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.mini-select {
+    background: var(--bg-subtle);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    outline: none;
+    cursor: pointer;
+}
+
+/* --- BROADCAST BOX --- */
+.broadcast-section {
+    padding: 0;
+    overflow: hidden;
+}
+
+.broadcast-section .card-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.broadcast-form {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: rgba(0, 0, 0, 0.1);
+    /* slightly darker background for input area */
+}
+
+[data-theme='light'] .broadcast-form {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.broadcast-form textarea {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 1rem;
+    color: var(--text-primary);
+    min-height: 100px;
+    resize: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.broadcast-form textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.broadcast-btn {
+    align-self: flex-end;
+    background: var(--primary);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.broadcast-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+/* --- RIGHT SIDEBAR LISTS --- */
+.sidebar-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.risk-alerts-section {
+    padding: 1.5rem;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    /* Red border tint */
+    background: linear-gradient(145deg, rgba(239, 68, 68, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.risk-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.risk-item:last-child {
+    border-bottom: none;
+}
+
+.risk-info h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.risk-info p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 2px 0 0 0;
+}
+
+.risk-tag {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Recent Mentees Mini List */
+.recent-mentees-section {
+    padding: 1.5rem;
+}
+
+.mentee-mini-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem;
+    border-radius: 12px;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.mentee-mini-item:hover {
+    background: var(--bg-subtle);
+}
+
+.mini-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+}
+
+.mini-info h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+[data-theme='light'] .mini-info h4,
+[data-theme='light'] .deadline-info h4 {
+    color: #0f172a !important;
+}
+
+.mini-info span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Tasks */
+.priority-tasks {
+    padding: 1.5rem;
+}
+
+.deadline-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--glass-border);
+    cursor: pointer;
+}
+
+.deadline-item:last-child {
+    border-bottom: none;
+}
+
+.deadline-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+}
+
+.deadline-icon.cs {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+}
+
+.deadline-icon.physics {
+    background: rgba(236, 72, 153, 0.1);
+    color: #f472b6;
+}
+
+.deadline-info h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.deadline-info p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 2px 0 0 0;
+}
+
+.item-arrow {
+    margin-left: auto;
+    color: var(--text-muted);
+    transition: transform 0.2s, color 0.2s;
+}
+
+.deadline-item:hover .item-arrow {
+    transform: translateX(4px);
+    color: var(--primary);
+}
+
+/* Resources Links */
+.resources-section {
+    padding: 1.5rem;
+}
+
+.resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem;
+    border-radius: 12px;
+    background: var(--bg-subtle);
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.resource-item:hover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+    transform: translateX(4px);
+}
+
+.resource-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.resource-item span {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
