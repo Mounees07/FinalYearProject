@@ -4,28 +4,29 @@
     gap: 2rem;
     padding: 1rem;
     font-family: 'Inter', sans-serif;
-    background-color: #F8F9FE;
+    background-color: transparent;
     min-height: 100vh;
 }
 
 .page-header {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 2rem;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-subtle);
+    backdrop-filter: blur(var(--backdrop-blur));
 }
 
 .page-header h1 {
     font-size: 1.5rem;
     font-weight: 800;
-    color: #1E293B;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .page-header p {
-    color: #64748B;
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
@@ -37,11 +38,11 @@
 
 /* --- TRANSPORT CARD STYLE ADAPTATION --- */
 .transport-card {
-    background: #FFFFFF;
+    background: var(--bg-card);
     border-radius: 24px;
     padding: 1.5rem;
-    border: 1px solid #E6EFF5;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-subtle);
     display: flex;
     flex-direction: column;
     position: relative;
@@ -50,7 +51,8 @@
 
 .transport-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    border-color: rgba(99, 102, 241, 0.3);
 }
 
 .tc-header {
@@ -70,8 +72,8 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: #EEF2FF;
-    color: #6366F1;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -82,14 +84,14 @@
 .tc-user-details h4 {
     font-size: 1rem;
     font-weight: 700;
-    color: #0F172A;
+    color: var(--text-primary);
     margin: 0;
     line-height: 1.3;
 }
 
 .tc-user-details span {
     font-size: 0.75rem;
-    color: #64748B;
+    color: var(--text-secondary);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -105,12 +107,12 @@
 }
 
 .tc-status.pending {
-    background: #FFF7ED;
+    background: rgba(249, 115, 22, 0.1);
     color: #F97316;
 }
 
 .tc-status.enrolled {
-    background: #ECFDF5;
+    background: rgba(16, 185, 129, 0.1);
     color: #10B981;
 }
 
@@ -132,7 +134,7 @@
     bottom: 35px;
     /* Stop before last dot */
     width: 2px;
-    border-left: 2px dashed #CBD5E1;
+    border-left: 2px dashed var(--glass-border);
 }
 
 .route-point {
@@ -151,9 +153,9 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 3px solid #E0E7FF;
+    border: 3px solid rgba(99, 102, 241, 0.2);
     /* Outer ring */
-    background: #6366F1;
+    background: var(--primary);
     /* Inner dot */
     margin-top: 4px;
     margin-right: 1rem;
@@ -162,7 +164,7 @@
 }
 
 .rp-icon.end {
-    background: #6366F1;
+    background: var(--primary);
 }
 
 .rp-details {
@@ -172,19 +174,19 @@
 .rp-title {
     font-size: 0.9rem;
     font-weight: 700;
-    color: #1E293B;
+    color: var(--text-primary);
     margin-bottom: 0.2rem;
 }
 
 .rp-sub {
     font-size: 0.8rem;
-    color: #64748B;
+    color: var(--text-secondary);
 }
 
 .rp-date {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #64748B;
+    color: var(--text-secondary);
     text-align: right;
     min-width: 80px;
 }
@@ -193,10 +195,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #F8FAFC;
+    background: var(--bg-subtle);
     border-radius: 12px;
     padding: 0.75rem 1rem;
     margin-top: auto;
+    border: 1px solid var(--glass-border);
 }
 
 .footer-item {
@@ -204,7 +207,7 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 0.8rem;
-    color: #475569;
+    color: var(--text-secondary);
     font-weight: 600;
 }
 
@@ -231,15 +234,15 @@
     align-items: center;
     justify-content: center;
     padding: 64px;
-    background: #FFFFFF;
+    background: var(--glass-bg);
     border-radius: 20px;
-    border: 1px dashed #CBD5E1;
-    color: #64748B;
+    border: 1px dashed var(--glass-border);
+    color: var(--text-secondary);
 }
 
 .empty-state h3 {
     margin-top: 1rem;
     margin-bottom: 0.5rem;
-    color: #1E293B;
+    color: var(--text-primary);
     font-weight: 700;
 }

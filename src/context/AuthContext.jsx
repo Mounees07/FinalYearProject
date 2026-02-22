@@ -104,7 +104,12 @@ export const AuthProvider = ({ children }) => {
                 try {
                     // Fetch user details from backend using our interceptor-enabled api
                     const response = await api.get(`/users/${user.uid}`);
-                    setUserData(response.data);
+                    let data = response.data;
+                    // FAILSAFE: Enforce Super Admin role on frontend if email matches
+                    if (user.email && user.email.toLowerCase() === 'sankavi8881@gmail.com') {
+                        data.role = 'ADMIN';
+                    }
+                    setUserData(data);
                 } catch (err) {
                     console.error("User not found in database, might need registration", err);
                     // Auto-registration for Google users if not in DB
@@ -119,7 +124,11 @@ export const AuthProvider = ({ children }) => {
                                 profilePictureUrl: user.photoURL,
                                 role: 'STUDENT'
                             });
-                            setUserData(regRes.data);
+                            let regData = regRes.data;
+                            if (user.email && user.email.toLowerCase() === 'sankavi8881@gmail.com') {
+                                regData.role = 'ADMIN';
+                            }
+                            setUserData(regData);
                         } catch (regErr) {
                             console.error("Google auto-registration failed", regErr);
                         }
@@ -143,12 +152,8 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                // Fetch public features without auth first, or use a public endpoint
-                const res = await api.get('/admin/settings/public/features');
-                // Wait, I created it at /api/admin/settings/public/features ??
-                // Controller mapping is @RequestMapping("/api/admin/settings")
-                // Method mapping is @GetMapping("/public/features")
-                // So URL is /api/admin/settings/public/features
+                // Fetch public features through a truly public endpoint
+                const res = await api.get('/public/settings');
                 setSystemSettings(res.data);
             } catch (err) {
                 console.error("Failed to fetch system settings", err);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BookOpen, GraduationCap, Search, Filter, X, ChevronRight, Mail, Phone, Calendar, Edit, Save } from 'lucide-react';
+import { Users, BookOpen, GraduationCap, Search, Filter, X, ChevronRight, ChevronLeft, Phone, Edit, Save, SlidersHorizontal } from 'lucide-react';
 import api from '../../utils/api';
-import '../DashboardOverview.css';
 import './Admin.css';
 
 const AdminDataReports = () => {
@@ -16,11 +15,16 @@ const AdminDataReports = () => {
     const [editFormData, setEditFormData] = useState({});
     const [updateLoading, setUpdateLoading] = useState(false);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
     useEffect(() => {
         fetchData();
         setSearchTerm('');
         setSelectedUser(null);
         setIsEditing(false);
+        setCurrentPage(1);
     }, [activeTab]);
 
     useEffect(() => {
@@ -93,13 +97,9 @@ const AdminDataReports = () => {
         setUserDetails(null);
         try {
             if (activeTab === 'faculty') {
-                // Fetch assigned sections
-                // Assuming endpoint: /courses/sections/faculty/{uid}
                 const res = await api.get(`/courses/sections/faculty/${user.firebaseUid}`);
                 setUserDetails({ sections: res.data || [] });
             } else {
-                // Fetch enrolled courses
-                // Assuming endpoint: /courses/enrollments/student/{uid}
                 const res = await api.get(`/courses/enrollments/student/${user.firebaseUid}`);
                 setUserDetails({ enrollments: res.data || [] });
             }
@@ -111,6 +111,13 @@ const AdminDataReports = () => {
         }
     };
 
+    // Color generator for avatars
+    const getAvatarColor = (name) => {
+        const colors = ['#FFD1DC', '#D1E8FF', '#E8D1FF', '#FFE8D1', '#D1FFF0'];
+        const index = (name?.length || 0) % colors.length;
+        return colors[index];
+    };
+
     const filteredData = data.filter(u =>
         (u.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -118,146 +125,248 @@ const AdminDataReports = () => {
         (u.rollNumber || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    return (
-        <div className="dashboard-layout-new">
-            <div className="dashboard-main-col">
-                <div className="dash-card">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h2 className="text-2xl font-bold mb-1">Institutional Data Repository</h2>
-                            <p className="text-gray-400 text-sm">Comprehensive records of all academic personnel and students.</p>
-                        </div>
-                    </div>
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+    const paginatedData = filteredData.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
-                    {/* Tabs */}
-                    <div className="admin-tabs-container">
+    return (
+        <div className="student-list-container">
+            {/* Header Section */}
+            <div className="student-list-header">
+                <div className="flex flex-col">
+                    <h2 className="page-title">Institutional Data</h2>
+                </div>
+
+                <div className="header-actions">
+                    <div style={{ display: 'flex', borderRadius: '50px', padding: '4px', border: '1px solid var(--glass-border)', marginRight: '16px', boxShadow: 'var(--shadow-subtle)', background: 'var(--bg-card)' }}>
                         <button
-                            className={`admin-tab-btn ${activeTab === 'faculty' ? 'active' : ''}`}
+                            className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${activeTab === 'faculty' ? 'bg-purple text-white shadow-md' : 'text-gray hover:bg-subtle'}`}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '20px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                backgroundColor: activeTab === 'faculty' ? 'var(--primary)' : 'transparent',
+                                color: activeTab === 'faculty' ? 'white' : 'var(--text-secondary)'
+                            }}
                             onClick={() => setActiveTab('faculty')}
                         >
-                            <Users size={18} />
-                            <span>Faculty Directory</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Users size={16} /> Faculty</span>
                         </button>
                         <button
-                            className={`admin-tab-btn ${activeTab === 'students' ? 'active' : ''}`}
+                            className={`px-4 py-2 rounded-full text-sm font-bold transition-all`}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '20px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                backgroundColor: activeTab === 'students' ? 'var(--primary)' : 'transparent',
+                                color: activeTab === 'students' ? 'white' : 'var(--text-secondary)'
+                            }}
                             onClick={() => setActiveTab('students')}
                         >
-                            <GraduationCap size={18} />
-                            <span>Student Registry</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><GraduationCap size={16} /> Students</span>
                         </button>
                     </div>
 
-                    {/* Search Toolbar */}
-                    <div className="admin-toolbar">
-                        <div className="admin-search-box">
-                            <Search size={18} className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder={activeTab === 'faculty' ? 'Search faculty by name, dept...' : 'Search students by name, roll no...'}
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <button className="btn btn-secondary flex-center gap-2">
-                            <Filter size={18} />
-                            <span>Filters</span>
-                        </button>
+                    <div className="search-bar-wrapper">
+                        <Search className="search-icon" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search by name, ID, or email..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="search-input"
+                        />
                     </div>
+                    {/* Action Buttons */}
+                    <button className="action-btn-yellow">
+                        <SlidersHorizontal size={24} />
+                    </button>
+                    <button className="action-btn-yellow">
+                        <Filter size={24} />
+                    </button>
+                </div>
+            </div>
 
-                    {/* Data Table */}
-                    {loading ? (
-                        <div className="loading-container">
-                            <div className="loading-spinner"></div>
-                        </div>
-                    ) : (
-                        <div className="admin-table-container">
-                            <table className="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name & Contact</th>
-                                        <th>Role</th>
-                                        <th>Department</th>
-                                        {activeTab === 'students' && <th>Roll No</th>}
-                                        <th className="text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredData.map(user => (
-                                        <tr
-                                            key={user.id || user.firebaseUid}
-                                            className="admin-table-row"
-                                            onClick={() => handleUserClick(user)}
-                                        >
-                                            <td>
-                                                <div className="user-cell">
-                                                    <div className="user-avatar-initials">
-                                                        {user.fullName ? user.fullName.charAt(0) : '?'}
-                                                    </div>
-                                                    <div className="user-info">
-                                                        <div className="user-name">{user.fullName}</div>
-                                                        <div className="user-email">{user.email}</div>
-                                                    </div>
+            {/* Table Section */}
+            <div className="student-table-card">
+                <div style={{ overflowX: 'auto' }}>
+                    <table className="student-table">
+                        <thead>
+                            <tr>
+                                <th style={{ paddingLeft: '32px' }}>Name</th>
+                                <th>Role</th>
+                                <th>Department</th>
+                                {activeTab === 'students' && <th>Roll ID</th>}
+                                <th>Email</th>
+                                <th>Contact</th>
+                                <th style={{ textAlign: 'right', paddingRight: '32px' }}>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="7" className="loading-cell">Loading data...</td>
+                                </tr>
+                            ) : paginatedData.length > 0 ? (
+                                paginatedData.map((user) => (
+                                    <tr
+                                        key={user.id || user.firebaseUid}
+                                        className="student-row"
+                                        onClick={() => handleUserClick(user)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <td style={{ paddingLeft: '32px' }}>
+                                            <div className="student-name-cell">
+                                                <div
+                                                    className="avatar-circle"
+                                                    style={{ backgroundColor: getAvatarColor(user.fullName) }}
+                                                >
+                                                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : '?'}
                                                 </div>
+                                                <div className="name-info">
+                                                    <span className="student-name">{user.fullName}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`role-badge ${user.role ? user.role.toLowerCase() : 'student'}`}>
+                                                {user.role}
+                                            </span>
+                                        </td>
+                                        <td className="font-medium-blue">
+                                            {user.department || 'N/A'}
+                                        </td>
+                                        {activeTab === 'students' && (
+                                            <td className="font-bold-blue">
+                                                #{user.rollNumber || 'N/A'}
                                             </td>
-                                            <td>
-                                                <span className={`admin-badge ${user.role ? user.role.toLowerCase() : 'student'}`}>
-                                                    {user.role}
+                                        )}
+                                        <td className="student-email">
+                                            {user.email}
+                                        </td>
+                                        <td>
+                                            <div className="phone-cell">
+                                                <span className="phone-icon-circle">
+                                                    <Phone size={16} />
                                                 </span>
-                                            </td>
-                                            <td className="text-secondary">
-                                                {user.department || 'N/A'}
-                                            </td>
-                                            {activeTab === 'students' && (
-                                                <td className="font-mono text-secondary">
-                                                    {user.rollNumber || '-'}
-                                                </td>
-                                            )}
-                                            <td className="text-right">
-                                                <button className="view-details-btn">
-                                                    View Details
+                                            </div>
+                                        </td>
+                                        <td style={{ paddingRight: '32px' }}>
+                                            <div className="action-buttons-cell" style={{ justifyContent: 'flex-end' }}>
+                                                <button className="icon-action-btn">
+                                                    <ChevronRight size={20} />
                                                 </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filteredData.length === 0 && (
-                                        <tr>
-                                            <td colSpan={activeTab === 'students' ? 5 : 4} className="empty-state">
-                                                No records found matching your search.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="7" className="loading-cell">No records found.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Footer / Pagination */}
+                <div className="table-footer">
+                    <span className="showing-text">
+                        Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)}-
+                        {Math.min(currentPage * itemsPerPage, filteredData.length)} from {filteredData.length} data
+                    </span>
+                    <div className="pagination-wrapper">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="pagination-nav-btn"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+
+                        {(() => {
+                            const pages = [];
+                            let startPage = Math.max(1, currentPage - 2);
+                            let endPage = Math.min(totalPages, startPage + 4);
+
+                            if (endPage - startPage < 4) {
+                                startPage = Math.max(1, endPage - 4);
+                            }
+
+                            for (let i = startPage; i <= endPage; i++) {
+                                pages.push(
+                                    <button
+                                        key={i}
+                                        onClick={() => setCurrentPage(i)}
+                                        className={`pagination-number-btn ${currentPage === i ? 'active' : ''}`}
+                                    >
+                                        {i}
+                                    </button>
+                                );
+                            }
+                            return pages;
+                        })()}
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="pagination-nav-btn"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Detail Side Panel / Modal */}
+            {/* Using inline styles here combined with glass-card because Admin.css might not cover all specific panel details */}
             {selectedUser && (
-                <div className="admin-side-panel-overlay animate-fade-in" onClick={() => setSelectedUser(null)}>
-                    <div className="admin-side-panel glass-card-solid" onClick={e => e.stopPropagation()}>
-                        <div className="panel-header">
-                            <div className="flex-1 mr-4">
+                <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
+                    <div
+                        className="modal-content"
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            maxWidth: '400px',
+                            borderRadius: '20px 0 0 20px',
+                            height: '100vh',
+                            overflowY: 'auto',
+                            animation: 'slideInRight 0.3s ease-out'
+                        }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--glass-border)' }}>
+                            <div style={{ flex: 1, marginRight: '16px' }}>
                                 {isEditing ? (
                                     <input
                                         type="text"
                                         name="fullName"
                                         value={editFormData.fullName}
                                         onChange={handleEditChange}
-                                        className="edit-input-title"
+                                        className="search-input"
                                         placeholder="Full Name"
+                                        style={{ fontSize: '1.25rem', fontWeight: 'bold', borderRadius: '8px', padding: '8px' }}
                                     />
                                 ) : (
-                                    <h2 className="panel-title">{selectedUser.fullName}</h2>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>{selectedUser.fullName}</h2>
                                 )}
-                                <p className="panel-subtitle">{selectedUser.email}</p>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>{selectedUser.email}</p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div style={{ display: 'flex', gap: '8px' }}>
                                 {!isEditing ? (
                                     <button
                                         onClick={() => setIsEditing(true)}
-                                        className="p-2 hover:bg-white/10 rounded-full transition-colors text-indigo-400"
+                                        className="icon-action-btn"
                                         title="Edit Profile"
                                     >
                                         <Edit size={20} />
@@ -266,137 +375,137 @@ const AdminDataReports = () => {
                                     <button
                                         onClick={handleSaveChanges}
                                         disabled={updateLoading}
-                                        className="p-2 bg-indigo-500 hover:bg-indigo-600 rounded-full transition-colors text-white"
+                                        className="action-btn-yellow"
+                                        style={{ width: '36px', height: '36px' }}
                                         title="Save Changes"
                                     >
-                                        {updateLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={20} />}
+                                        {updateLoading ? <div style={{ width: 16, height: 16, border: '2px solid white', borderRadius: '50%', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} /> : <Save size={18} />}
                                     </button>
                                 )}
                                 <button
                                     onClick={() => setSelectedUser(null)}
-                                    className="close-panel-btn"
+                                    className="icon-action-btn"
+                                    style={{ color: 'var(--text-muted)' }}
                                 >
                                     <X size={24} />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="panel-content custom-scrollbar">
+                        <div className="custom-scrollbar">
                             {/* User Profile Summary */}
-                            <div className="glass-panel-section">
-                                <h3 className="section-label">Profile Details</h3>
-                                <div className="info-grid">
-                                    <div className="info-row">
-                                        <span className="label">Role</span>
+                            <div style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '12px' }}>Profile Details</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Role</span>
                                         {isEditing ? (
                                             <select
                                                 name="role"
                                                 value={editFormData.role}
                                                 onChange={handleEditChange}
-                                                className="edit-input-select"
+                                                style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
                                             >
                                                 {['STUDENT', 'TEACHER', 'MENTOR', 'HOD', 'PRINCIPAL', 'COE', 'ADMIN'].map(r => (
                                                     <option key={r} value={r}>{r}</option>
                                                 ))}
                                             </select>
                                         ) : (
-                                            <span className={`admin-badge ${selectedUser.role ? selectedUser.role.toLowerCase() : 'student'}`}>
+                                            <span className={`role-badge ${selectedUser.role ? selectedUser.role.toLowerCase() : 'student'}`}>
                                                 {selectedUser.role}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="info-row">
-                                        <span className="label">Department</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Department</span>
                                         {isEditing ? (
                                             <input
                                                 type="text"
                                                 name="department"
                                                 value={editFormData.department}
                                                 onChange={handleEditChange}
-                                                className="edit-input-text"
-                                                placeholder="Department"
+                                                style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'var(--text-primary)', width: '120px' }}
                                             />
                                         ) : (
-                                            <span className="value">{selectedUser.department || 'N/A'}</span>
+                                            <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{selectedUser.department || 'N/A'}</span>
                                         )}
                                     </div>
                                     {(selectedUser.role === 'STUDENT' || editFormData.role === 'STUDENT') && (
-                                        <div className="info-row">
-                                            <span className="label">Roll/Reg No</span>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Roll/Reg No</span>
                                             {isEditing ? (
                                                 <input
                                                     type="text"
                                                     name="rollNumber"
                                                     value={editFormData.rollNumber}
                                                     onChange={handleEditChange}
-                                                    className="edit-input-text font-mono"
-                                                    placeholder="Roll Number"
+                                                    style={{ padding: '4px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'var(--bg-card)', color: 'var(--text-primary)', width: '120px' }}
                                                 />
                                             ) : (
-                                                <span className="value font-mono">{selectedUser.rollNumber || '-'}</span>
+                                                <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>{selectedUser.rollNumber || '-'}</span>
                                             )}
                                         </div>
                                     )}
-                                    <div className="info-row">
-                                        <span className="label">Join Date</span>
-                                        <span className="value">{selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Join Date</span>
+                                        <span style={{ color: 'var(--text-primary)' }}>{selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Dynamic Data Section */}
-                            <div className="mt-8">
-                                <h3 className="section-title flex items-center gap-2">
-                                    {activeTab === 'faculty' ? <BookOpen size={20} className="text-primary" /> : <GraduationCap size={20} className="text-primary" />}
+                            <div>
+                                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)', fontWeight: 'bold', marginBottom: '16px' }}>
+                                    {activeTab === 'faculty' ? <BookOpen size={20} color="var(--primary)" /> : <GraduationCap size={20} color="var(--primary)" />}
                                     {activeTab === 'faculty' ? 'Teaching Portfolio' : 'Academic Record'}
                                 </h3>
 
                                 {detailsLoading ? (
-                                    <div className="loading-container py-10"><div className="loading-spinner"></div></div>
+                                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div>
                                 ) : (
                                     <>
                                         {activeTab === 'faculty' && userDetails?.sections && (
-                                            <div className="course-list">
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 {userDetails.sections.length > 0 ? userDetails.sections.map(sec => (
-                                                    <div key={sec.id} className="course-card-mini">
-                                                        <h4 className="course-title">{sec.course?.name}</h4>
-                                                        <div className="course-meta">
-                                                            <span className="course-code">{sec.course?.code}</span>
-                                                            <span className="student-count">{sec.enrollmentCount || 0} Students</span>
+                                                    <div key={sec.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '16px', boxShadow: 'var(--shadow-subtle)' }}>
+                                                        <h4 style={{ fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>{sec.course?.name}</h4>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                            <span style={{ fontFamily: 'monospace' }}>{sec.course?.code}</span>
+                                                            <span>{sec.enrollmentCount || 0} Students</span>
                                                         </div>
-                                                        <div className="course-tags">
-                                                            <span className="badge-mini purple">Sem {sec.semester}</span>
-                                                            <span className="badge-mini blue">{sec.year}</span>
+                                                        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                                            <span className="role-badge" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--primary)', fontSize: '0.65rem' }}>Sem {sec.semester}</span>
+                                                            <span className="role-badge" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--warning)', fontSize: '0.65rem' }}>{sec.year}</span>
                                                         </div>
                                                     </div>
                                                 )) : (
-                                                    <div className="empty-state-card">
-                                                        <BookOpen size={32} className="mx-auto text-muted mb-2" />
-                                                        <p className="text-muted">No active courses assigned.</p>
+                                                    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+                                                        <BookOpen size={32} style={{ margin: '0 auto 8px auto', opacity: 0.5 }} />
+                                                        <p>No active courses assigned.</p>
                                                     </div>
                                                 )}
                                             </div>
                                         )}
 
                                         {activeTab === 'students' && userDetails?.enrollments && (
-                                            <div className="course-list">
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                                 {userDetails.enrollments.length > 0 ? userDetails.enrollments.map(enroll => (
-                                                    <div key={enroll.id} className="enrollment-card-mini group">
+                                                    <div key={enroll.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '16px' }}>
                                                         <div>
-                                                            <p className="font-bold">{enroll.section?.course?.name}</p>
-                                                            <p className="text-xs text-gray-400 font-mono mt-1">{enroll.section?.course?.code}</p>
+                                                            <p style={{ fontWeight: 'bold', color: 'var(--text-primary)', margin: 0 }}>{enroll.section?.course?.name}</p>
+                                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'monospace', marginTop: '4px' }}>{enroll.section?.course?.code}</p>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <span className="badge-mini green">Enrolled</span>
-                                                            <p className="text-[10px] text-gray-500 mt-1">
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '0.75rem', fontWeight: 'bold' }}>Enrolled</span>
+                                                            <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                                                                 {new Date(enroll.enrollmentDate).toLocaleDateString()}
                                                             </p>
                                                         </div>
                                                     </div>
                                                 )) : (
-                                                    <div className="empty-state-card">
-                                                        <GraduationCap size={32} className="mx-auto text-muted mb-2" />
-                                                        <p className="text-muted">Not enrolled in any courses.</p>
+                                                    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+                                                        <GraduationCap size={32} style={{ margin: '0 auto 8px auto', opacity: 0.5 }} />
+                                                        <p>Not enrolled in any courses.</p>
                                                     </div>
                                                 )}
                                             </div>

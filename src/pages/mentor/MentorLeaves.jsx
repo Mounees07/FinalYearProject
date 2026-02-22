@@ -22,7 +22,7 @@ const MentorLeaves = () => {
 
     const fetchRequests = async () => {
         try {
-            const res = await api.get(`/leaves/mentor/${currentUser.uid}`);
+            const res = await api.get(`/leaves/pending/${currentUser.uid}`);
             setRequests(res.data);
         } catch (err) {
             console.error(err);

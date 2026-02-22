@@ -206,7 +206,7 @@ const AdminUserList = () => {
                                         </td>
                                         <td>
                                             <div className="student-name-cell">
-                                                <div className="avatar-circle" style={{ backgroundColor: '#E6E6F2' }}>
+                                                <div className="avatar-circle" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-primary)' }}>
                                                     {user.fullName ? user.fullName.charAt(0).toUpperCase() : <User size={16} />}
                                                 </div>
                                                 <div className="name-info">
@@ -214,13 +214,14 @@ const AdminUserList = () => {
                                                         <input
                                                             value={editUser.fullName}
                                                             onChange={e => setEditUser({ ...editUser, fullName: e.target.value })}
-                                                            className="form-input-sm"
+                                                            className="styled-input"
+                                                            style={{ padding: '4px 8px' }}
                                                             autoFocus
                                                         />
                                                     ) : (
                                                         <span className="student-name">{user.fullName || 'Unknown User'}</span>
                                                     )}
-                                                    <span className="student-email" style={{ fontSize: '0.8rem', color: '#A098AE' }}>{user.id || user.firebaseUid?.substring(0, 8)}...</span>
+                                                    <span className="student-email" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{user.id || user.firebaseUid?.substring(0, 8)}...</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -229,7 +230,8 @@ const AdminUserList = () => {
                                                 <select
                                                     value={editUser.role}
                                                     onChange={e => setEditUser({ ...editUser, role: e.target.value })}
-                                                    className="form-select-sm"
+                                                    className="styled-select"
+                                                    style={{ padding: '4px 8px' }}
                                                 >
                                                     {['STUDENT', 'TEACHER', 'MENTOR', 'HOD', 'ADMIN', 'COE', 'PRINCIPAL', 'GATE_SECURITY'].map(r => (
                                                         <option key={r} value={r}>{r}</option>
@@ -255,10 +257,10 @@ const AdminUserList = () => {
                                             <div className="action-buttons-cell">
                                                 {editUser && editUser.id === user.id ? (
                                                     <>
-                                                        <button onClick={handleEditSave} className="icon-action-btn" style={{ color: '#4CAF50' }} title="Save">
+                                                        <button onClick={handleEditSave} className="icon-action-btn" style={{ color: 'var(--success)' }} title="Save">
                                                             <Save size={20} />
                                                         </button>
-                                                        <button onClick={() => setEditUser(null)} className="icon-action-btn" style={{ color: '#FB7D5B' }} title="Cancel">
+                                                        <button onClick={() => setEditUser(null)} className="icon-action-btn" style={{ color: 'var(--danger)' }} title="Cancel">
                                                             <X size={20} />
                                                         </button>
                                                     </>
@@ -308,17 +310,17 @@ const AdminUserList = () => {
 
             {showCreateModal && (
                 <div className="modal-overlay">
-                    <div className="modal-content glass-card animate-fade-in" style={{ maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <div className="modal-header">
-                            <h2>Create New User</h2>
-                            <button className="close-btn" onClick={() => setShowCreateModal(false)}>&times;</button>
+                    <div className="modal-content animate-fade-in" style={{ maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div className="modal-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Create New User</h2>
+                            <button className="icon-action-btn" onClick={() => setShowCreateModal(false)}><X size={24} /></button>
                         </div>
                         <form onSubmit={handleCreate} className="modal-form">
                             <div className="form-group">
                                 <label>Full Name</label>
                                 <input
                                     type="text"
-                                    className="form-input"
+                                    className="styled-input"
                                     value={newUser.fullName}
                                     onChange={e => setNewUser({ ...newUser, fullName: e.target.value })}
                                     required
@@ -328,7 +330,7 @@ const AdminUserList = () => {
                                 <label>Email Address</label>
                                 <input
                                     type="email"
-                                    className="form-input"
+                                    className="styled-input"
                                     value={newUser.email}
                                     onChange={e => setNewUser({ ...newUser, email: e.target.value })}
                                     required
@@ -337,7 +339,7 @@ const AdminUserList = () => {
                             <div className="form-group">
                                 <label>Role</label>
                                 <select
-                                    className="form-input"
+                                    className="styled-select"
                                     value={newUser.role}
                                     onChange={e => setNewUser({ ...newUser, role: e.target.value })}
                                 >
@@ -353,7 +355,7 @@ const AdminUserList = () => {
                                         <label>Roll Number (Reg No)</label>
                                         <input
                                             type="text"
-                                            className="form-input"
+                                            className="styled-input"
                                             value={newUser.rollNumber}
                                             onChange={e => setNewUser({ ...newUser, rollNumber: e.target.value })}
                                         />
@@ -362,7 +364,7 @@ const AdminUserList = () => {
                                         <label>Department</label>
                                         <input
                                             type="text"
-                                            className="form-input"
+                                            className="styled-input"
                                             value={newUser.department}
                                             onChange={e => setNewUser({ ...newUser, department: e.target.value })}
                                         />
@@ -375,7 +377,7 @@ const AdminUserList = () => {
                                     <label>Department</label>
                                     <input
                                         type="text"
-                                        className="form-input"
+                                        className="styled-input"
                                         value={newUser.department}
                                         onChange={e => setNewUser({ ...newUser, department: e.target.value })}
                                     />
@@ -386,7 +388,7 @@ const AdminUserList = () => {
                                 <label>Password (Temporary)</label>
                                 <input
                                     type="password"
-                                    className="form-input"
+                                    className="styled-input"
                                     value={newUser.password}
                                     onChange={e => setNewUser({ ...newUser, password: e.target.value })}
                                     minLength={6}
@@ -395,7 +397,7 @@ const AdminUserList = () => {
                                 />
                             </div>
 
-                            <button type="submit" className="btn btn-primary w-full">Create User & Enable Login</button>
+                            <button type="submit" className="save-btn" style={{ width: '100%', justifyContent: 'center' }}>Create User & Enable Login</button>
                         </form>
                     </div>
                 </div>
@@ -403,25 +405,25 @@ const AdminUserList = () => {
 
             {showBulkModal && (
                 <div className="modal-overlay">
-                    <div className="modal-content glass-card animate-fade-in" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <div className="modal-header">
-                            <h2>Bulk User Upload</h2>
-                            <button className="close-btn" onClick={() => setShowBulkModal(false)}>&times;</button>
+                    <div className="modal-content animate-fade-in" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div className="modal-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Bulk User Upload</h2>
+                            <button className="icon-action-btn" onClick={() => setShowBulkModal(false)}><X size={24} /></button>
                         </div>
                         <div className="modal-body">
-                            <div className="bulk-instructions" style={{ marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                                <h4 style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div className="bulk-instructions" style={{ marginBottom: '20px', padding: '15px', background: 'var(--bg-subtle)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                                <h4 style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
                                     <FileText size={18} /> CSV Format Guide
                                 </h4>
                                 <p style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--text-secondary)' }}>
                                     Your CSV file must include the following headers in order: <br />
-                                    <code>Full Name, Email, Password, Roll Number, Department, Semester, Section</code>
+                                    <code style={{ background: 'var(--bg-deep)', padding: '2px 4px', borderRadius: '4px' }}>Full Name, Email, Password, Roll Number, Department, Semester, Section</code>
                                 </p>
                                 <button
                                     type="button"
                                     onClick={downloadTemplate}
-                                    className="text-btn"
-                                    style={{ color: 'var(--primary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                    className="text-purple"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}
                                 >
                                     <Download size={14} /> Download Sample Template
                                 </button>
@@ -431,7 +433,7 @@ const AdminUserList = () => {
                                 <div className="form-group">
                                     <label>Select Role for Batch</label>
                                     <select
-                                        className="form-input"
+                                        className="styled-select"
                                         value={bulkRole}
                                         onChange={e => setBulkRole(e.target.value)}
                                     >
@@ -445,7 +447,7 @@ const AdminUserList = () => {
                                     <label>Upload CSV File</label>
                                     <input
                                         type="file"
-                                        className="form-input"
+                                        className="styled-input"
                                         accept=".csv"
                                         onChange={e => setBulkFile(e.target.files[0])}
                                         required
@@ -455,19 +457,19 @@ const AdminUserList = () => {
 
                                 <button
                                     type="submit"
-                                    className="btn btn-primary w-full"
+                                    className="save-btn"
                                     disabled={uploading || !bulkFile}
-                                    style={{ marginTop: '10px' }}
+                                    style={{ marginTop: '10px', width: '100%', justifyContent: 'center' }}
                                 >
                                     {uploading ? 'Uploading & Processing...' : 'Upload & Register Users'}
                                 </button>
                             </form>
 
                             {uploadLogs.length > 0 && (
-                                <div className="upload-logs" style={{ marginTop: '20px', maxHeight: '200px', overflowY: 'auto', background: '#000', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-                                    <h5 style={{ color: '#fff', marginBottom: '5px' }}>Processing Logs:</h5>
+                                <div className="upload-logs" style={{ marginTop: '20px', maxHeight: '200px', overflowY: 'auto', background: 'var(--bg-deep)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', fontFamily: 'monospace', border: '1px solid var(--glass-border)' }}>
+                                    <h5 style={{ color: 'var(--text-primary)', marginBottom: '5px' }}>Processing Logs:</h5>
                                     {uploadLogs.map((log, idx) => (
-                                        <div key={idx} style={{ color: log.toLowerCase().includes('error') ? '#ff6b6b' : '#51cf66', marginBottom: '2px' }}>
+                                        <div key={idx} style={{ color: log.toLowerCase().includes('error') ? 'var(--danger)' : 'var(--success)', marginBottom: '2px' }}>
                                             {log}
                                         </div>
                                     ))}

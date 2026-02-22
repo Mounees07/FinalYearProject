@@ -358,9 +358,9 @@ const AdminStudentList = () => {
                                 startPage = 2;
                                 endPage = totalPages - 1;
                             } else {
-                                if (currentPage <= 3) { // Near the beginning
+                                if (currentPage <= 3) {
                                     endPage = 4;
-                                } else if (currentPage >= totalPages - 2) { // Near the end
+                                } else if (currentPage >= totalPages - 2) {
                                     startPage = totalPages - 3;
                                 }
                             }
@@ -370,30 +370,23 @@ const AdminStudentList = () => {
                                     <button
                                         key={i}
                                         onClick={() => setCurrentPage(i)}
-                                        className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-colors ${currentPage === i
-                                            ? 'bg-[#4D44B5] text-white shadow-lg shadow-[#4d44b550]'
-                                            : 'border border-[#F5F5FA] text-[#303972] hover:bg-[#e0e0e0]'
-                                            }`}
+                                        className={`pagination-number-btn ${currentPage === i ? 'active' : ''}`}
                                     >
                                         {i}
                                     </button>
                                 );
                             }
 
-                            if (currentPage < totalPages - 2 && totalPages > 5) { // Only show ellipsis if there are enough pages to warrant it
-                                pages.push(<span key="end-ellipsis" className="w-8 h-8 flex items-center justify-center text-[#A098AE]">...</span>);
+                            if (currentPage < totalPages - 2 && totalPages > 5) {
+                                pages.push(<span key="end-ellipsis" className="pagination-ellipsis">...</span>);
                             }
 
-                            // Always show last page if > 1
                             if (totalPages > 1) {
                                 pages.push(
                                     <button
                                         key={totalPages}
                                         onClick={() => setCurrentPage(totalPages)}
-                                        className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-colors ${currentPage === totalPages
-                                            ? 'bg-[#4D44B5] text-white shadow-lg shadow-[#4d44b550]'
-                                            : 'border border-[#F5F5FA] text-[#303972] hover:bg-[#e0e0e0]'
-                                            }`}
+                                        className={`pagination-number-btn ${currentPage === totalPages ? 'active' : ''}`}
                                     >
                                         {totalPages}
                                     </button>
@@ -406,7 +399,7 @@ const AdminStudentList = () => {
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                             disabled={currentPage === totalPages}
-                            className="w-8 h-8 flex items-center justify-center rounded-full border border-[#F5F5FA] text-[#A098AE] hover:bg-[#4D44B5] hover:text-white disabled:opacity-50 transition-colors"
+                            className="pagination-nav-btn"
                         >
                             <ChevronRight size={16} />
                         </button>

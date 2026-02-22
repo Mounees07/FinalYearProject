@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
     ArrowLeft,
     BookOpen,
-    Play,
+    PlayCircle,
     FileText,
     Clock,
     User,
@@ -21,9 +23,17 @@ import './StudentCourseDetails.css';
 const StudentCourseDetails = () => {
     const { sectionId } = useParams();
     const navigate = useNavigate();
+    const { currentUser, userData } = useAuth();
     const [section, setSection] = useState(null);
     const [lessons, setLessons] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Attendance State
+    const [attendanceOtp, setAttendanceOtp] = useState('');
+    const [markingAttendance, setMarkingAttendance] = useState(false);
+    const [showOtpModal, setShowOtpModal] = useState(false);
+    const [activeSession, setActiveSession] = useState(null);
+    const [myAttendances, setMyAttendances] = useState([]);
 
     // Progress State
     const [completedLessonIds, setCompletedLessonIds] = useState(() => {
@@ -48,6 +58,11 @@ const StudentCourseDetails = () => {
                     const lessonsRes = await api.get(`/courses/${sectionRes.data.course.id}/lessons`);
                     setLessons(lessonsRes.data);
                 }
+
+                if (userData && sectionId) {
+                    const attRes = await api.get(`/course-attendance/section/${sectionId}/student/${userData.id}`);
+                    setMyAttendances(attRes.data || []);
+                }
             } catch (error) {
                 console.error("Failed to fetch course details", error);
             } finally {
@@ -55,8 +70,32 @@ const StudentCourseDetails = () => {
             }
         };
 
-        if (sectionId) fetchData();
-    }, [sectionId]);
+        if (sectionId && userData) fetchData();
+    }, [sectionId, userData]);
+
+    useEffect(() => {
+        let interval;
+        if (sectionId) {
+            const checkActiveSession = async () => {
+                try {
+                    const res = await api.get(`/course-attendance/sessions/section/${sectionId}/active`);
+                    if (res.data && res.data.id) {
+                        if (!activeSession || activeSession.id !== res.data.id) {
+                            setActiveSession(res.data);
+                        }
+                    } else {
+                        setActiveSession(null);
+                    }
+                } catch (e) {
+                    setActiveSession(null);
+                }
+            };
+
+            checkActiveSession();
+            interval = setInterval(checkActiveSession, 5000);
+        }
+        return () => clearInterval(interval);
+    }, [sectionId, activeSession]);
 
     const uniqueLessons = lessons.filter((lesson, index, self) =>
         index === self.findIndex((t) => (
@@ -64,11 +103,10 @@ const StudentCourseDetails = () => {
         ))
     );
 
-    const toggleCompletion = (id) => {
+    const markAsViewed = (id) => {
         setCompletedLessonIds(prev => {
-            const newSet = prev.includes(id)
-                ? prev.filter(x => x !== id)
-                : [...prev, id];
+            if (prev.includes(id)) return prev;
+            const newSet = [...prev, id];
             localStorage.setItem(`completed_lessons_${sectionId}`, JSON.stringify(newSet));
             return newSet;
         });
@@ -116,6 +154,22 @@ const StudentCourseDetails = () => {
         });
     };
 
+    const handleMarkAttendance = async () => {
+        if (!attendanceOtp) return;
+        setMarkingAttendance(true);
+        try {
+            const res = await api.post(`/course-attendance/mark?otp=${attendanceOtp}&studentUid=${currentUser.uid}`);
+            alert("Attendance marked successfully! Status: " + res.data.status);
+            setShowOtpModal(false);
+            setAttendanceOtp('');
+            setActiveSession(null); // Clear active session to prevent double entry
+        } catch (e) {
+            alert("Failed to mark attendance: " + (e.response?.data || e.message));
+        } finally {
+            setMarkingAttendance(false);
+        }
+    };
+
     if (loading) return (
         <div className="course-details-container flex items-center justify-center">
             <div className="animate-pulse text-indigo-500 font-bold tracking-widest text-xs uppercase">Loading Curriculum...</div>
@@ -161,6 +215,144 @@ const StudentCourseDetails = () => {
                 </div>
             </div>
 
+            {/* Attendance Summary */}
+            <div className="attendance-summary-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ backgroundColor: '#f1f5f9', padding: '10px', borderRadius: '50%', color: '#64748b' }}>
+                        <Clock size={20} />
+                    </div>
+                    <div>
+                        <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b', fontWeight: '700' }}>My Attendance</h4>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Overall class participation</p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#3b82f6' }}>{myAttendances.length}</div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>Total</div>
+                    </div>
+                    <div style={{ width: '1px', height: '32px', backgroundColor: '#e2e8f0' }}></div>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#10b981' }}>{myAttendances.filter(a => a.status === 'P').length}</div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>Present</div>
+                    </div>
+                    <div style={{ width: '1px', height: '32px', backgroundColor: '#e2e8f0' }}></div>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#ef4444' }}>{myAttendances.filter(a => a.status === 'A').length}</div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>Absent</div>
+                    </div>
+                    <div style={{ width: '1px', height: '32px', backgroundColor: '#e2e8f0' }}></div>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>
+                            {myAttendances.length > 0 ? Math.round((myAttendances.filter(a => a.status === 'P').length / myAttendances.length) * 100) : 0}%
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>Percentage</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Course Actions Header */}
+            <div className="active-session-card" onClick={() => setShowOtpModal(true)} style={{ cursor: 'pointer', border: activeSession ? '2px solid #10b981' : '1px solid var(--glass-border)', boxShadow: activeSession ? '0 10px 15px -3px rgba(16, 185, 129, 0.2)' : undefined }}>
+                <div className="active-session-info">
+                    {activeSession ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', marginBottom: '4px' }}>
+                            <div className="pulse-dot" style={{ width: '10px', height: '10px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
+                            <h3 className="active-session-title" style={{ color: '#10b981' }}>Live Attendance Session Active</h3>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <h3 className="active-session-title">
+                                <Shield size={20} className="text-indigo-500" /> Attendance Verification
+                            </h3>
+                        </div>
+                    )}
+                    <p className="active-session-desc" style={{ color: activeSession ? '#059669' : undefined }}>
+                        {activeSession ? 'Your professor is running a live attendance check. Click here to enter the OTP.' : 'Has your professor generated a live attendance code? Click to verify your presence.'}
+                    </p>
+                </div>
+                <button className="active-session-btn" style={{ backgroundColor: activeSession ? '#10b981' : '#2563eb' }}>Verify Now</button>
+            </div>
+            {showOtpModal && createPortal(
+                <div className="otp-modal-overlay" onClick={() => setShowOtpModal(false)}>
+                    <div className="otp-modal-content" onClick={e => e.stopPropagation()}>
+
+                        <button onClick={() => setShowOtpModal(false)} className="otp-modal-close">
+                            <X size={20} />
+                        </button>
+
+                        <div className="otp-live-badge">
+                            <div className="dot"></div>
+                            Session Live
+                        </div>
+
+                        <h2 className="otp-modal-title">Enter Attendance Code</h2>
+                        <p className="otp-modal-desc">
+                            {section.faculty?.fullName} has started a live attendance session for {section.course?.code}. Enter the 6-digit code shown on the screen.
+                        </p>
+
+                        <div className="otp-inputs-row">
+                            {Array.from({ length: 6 }).map((_, idx) => (
+                                <React.Fragment key={idx}>
+                                    <input
+                                        id={`otp-${idx}`}
+                                        type="text"
+                                        maxLength={1}
+                                        value={attendanceOtp[idx] || ''}
+                                        onPaste={(e) => {
+                                            e.preventDefault();
+                                            const pasted = e.clipboardData.getData('text').replace(/[^0-9a-zA-Z]/g, '').slice(0, 6);
+                                            if (pasted) {
+                                                setAttendanceOtp(pasted);
+                                                const focusIndex = Math.min(pasted.length, 5);
+                                                const next = document.getElementById(`otp-${focusIndex}`);
+                                                if (next) next.focus();
+                                            }
+                                        }}
+                                        onChange={(e) => {
+                                            const val = e.target.value.slice(-1);
+                                            if (val && !/^[0-9a-zA-Z]*$/.test(val)) return;
+
+                                            let newOtp = attendanceOtp.split('');
+                                            newOtp[idx] = val;
+                                            setAttendanceOtp(newOtp.join(''));
+
+                                            if (val && idx < 5) {
+                                                const next = document.getElementById(`otp-${idx + 1}`);
+                                                if (next) next.focus();
+                                            }
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Backspace' && !attendanceOtp[idx] && idx > 0) {
+                                                const prev = document.getElementById(`otp-${idx - 1}`);
+                                                if (prev) {
+                                                    prev.focus();
+                                                }
+                                            }
+                                        }}
+                                        className="otp-modal-input"
+                                        autoComplete="off"
+                                    />
+                                    {idx === 2 && <span className="otp-modal-dash">-</span>}
+                                </React.Fragment>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={handleMarkAttendance}
+                            disabled={markingAttendance || attendanceOtp.length < 6}
+                            className="otp-modal-btn"
+                        >
+                            {markingAttendance ? 'Verifying...' : 'Mark Attendance'}
+                        </button>
+
+                        <div className="otp-modal-footer">
+                            Code not working? <button className="otp-modal-link">Request assistance</button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
             {/* Modules List */}
             <div className="modules-header">
                 <BookOpen size={20} className="text-indigo-500" />
@@ -182,28 +374,28 @@ const StudentCourseDetails = () => {
                         return (
                             <div key={lesson.id} className={`module-card group ${isCompleted ? 'border-green-500/30 bg-green-900/5' : ''}`}>
                                 <div className="module-left">
-                                    <button
-                                        onClick={() => toggleCompletion(lesson.id)}
-                                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isCompleted ? 'bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.4)]' : 'bg-white/5 text-gray-600 hover:bg-white/10'}`}
-                                    >
-                                        {isCompleted ? <CheckCircle size={16} /> : <div className="w-4 h-4 rounded-full border-2 border-current opacity-50" />}
-                                    </button>
+                                    <div className="w-1 h-1 rounded-full bg-[var(--text-muted)] opacity-50 ml-2" />
 
                                     <div className="module-info">
-                                        <h3 className={isCompleted ? 'text-gray-400 decoration-slice' : ''}>{lesson.title}</h3>
+                                        <h3 className={`text-[var(--text-primary)] font-bold mb-1 ${isCompleted ? 'opacity-70' : ''}`}>{lesson.title}</h3>
                                         <div className="flex gap-2">
                                             <span className="module-type">{lesson.contentType}</span>
-                                            {lesson.description && <span className="text-xs text-gray-500 flex items-center line-clamp-1 max-w-md">{lesson.description}</span>}
+                                            {lesson.description && <span className="text-xs text-[var(--text-secondary)] flex items-center line-clamp-1 max-w-md">{lesson.description}</span>}
                                         </div>
                                     </div>
                                 </div>
 
                                 <button
-                                    onClick={() => lesson.contentUrl && window.open(lesson.contentUrl, '_blank')}
-                                    className="btn-view-material"
+                                    onClick={() => {
+                                        if (lesson.contentUrl) {
+                                            window.open(lesson.contentUrl, '_blank');
+                                            markAsViewed(lesson.id);
+                                        }
+                                    }}
+                                    className={`btn-view-material ${isCompleted ? 'opacity-70' : ''}`}
                                 >
-                                    {lesson.contentType === 'VIDEO' ? <Play size={14} /> : <FileText size={14} />}
-                                    <span>Access Content</span>
+                                    {lesson.contentType === 'VIDEO' ? <PlayCircle size={14} className="text-[var(--text-secondary)]" /> : <FileText size={14} className="text-[var(--text-secondary)]" />}
+                                    <span>{isCompleted ? 'Review Content' : 'Access Content'}</span>
                                 </button>
                             </div>
                         );
@@ -212,106 +404,94 @@ const StudentCourseDetails = () => {
             </div>
 
             {/* PREMIUM Quiz Section */}
-            <div className="max-w-7xl mx-auto mb-24 lg:px-8">
-                <div className={`
-                    relative overflow-hidden rounded-3xl border p-10 transition-all duration-500
-                    ${allCompleted
-                        ? 'bg-[#0f0f13] border-indigo-500/30 shadow-[0_0_50px_-10px_rgba(99,102,241,0.2)]'
-                        : 'bg-black/40 border-white/5'}
-                `}>
-                    {/* Background Effects */}
-                    <div className={`absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none transition-opacity duration-1000 ${allCompleted ? 'opacity-100' : 'opacity-0'}`} />
+            <div className="mb-24">
+                <div className={`module-card ${allCompleted ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-[var(--glass-border)]'}`}>
 
-                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-
-                        {/* Left: Icon & Text */}
-                        <div className="flex items-center gap-8 w-full md:w-auto">
-                            <div className={`
-                                w-24 h-24 rounded-3xl flex items-center justify-center shrink-0 transition-all duration-500
-                                ${allCompleted
-                                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-[0_0_40px_rgba(99,102,241,0.4)] rotate-0 scale-100'
-                                    : 'bg-white/5 text-gray-600 rotate-6 scale-95'}
-                            `}>
-                                {allCompleted ? <Award size={48} /> : <Lock size={48} />}
-                            </div>
-
-                            <div className="flex flex-col">
-                                <span className={`text-xs font-bold uppercase tracking-[0.3em] mb-3 ${allCompleted ? 'text-indigo-400' : 'text-gray-600'}`}>
-                                    {allCompleted ? 'Validation Unlocked' : 'Module Locked'}
-                                </span>
-                                <h2 className={`text-4xl font-black uppercase tracking-tighter mb-2 ${allCompleted ? 'text-white' : 'text-gray-600'}`}>
-                                    Final Assessment
-                                </h2>
-                                <p className="text-gray-400 text-sm font-medium max-w-lg leading-relaxed">
-                                    {allCompleted
-                                        ? "Congratulations! You have successfully mastered the curriculum. You may now proceed to the final verification test."
-                                        : `To access the certification quiz, you must complete all ${uniqueLessons.length} learning modules above.`}
-                                </p>
-                            </div>
+                    <div className="module-left">
+                        <div className={`
+                            w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500
+                            ${allCompleted
+                                ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30'
+                                : 'bg-[var(--bg-subtle)] border border-[var(--glass-border)] text-[var(--text-muted)]'}
+                        `}>
+                            {allCompleted ? <Award size={24} /> : <Lock size={24} />}
                         </div>
 
-                        {/* Right: Button */}
-                        <button
-                            onClick={handleStartQuiz}
-                            disabled={!allCompleted || !section.testsEnabled}
-                            className={`
-                                group relative shrink-0 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-4 overflow-hidden
-                                ${allCompleted && section.testsEnabled
-                                    ? 'bg-white text-black hover:bg-indigo-50 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] cursor-pointer'
-                                    : 'bg-white/5 text-gray-600 border border-white/5 cursor-not-allowed'}
-                            `}
-                        >
-                            {allCompleted && section.testsEnabled ? (
-                                <>
-                                    <span className="relative z-10">Start Attempt</span>
-                                    <ArrowRight size={16} className="relative z-10 group-hover:translate-x-1 transition-transform" />
-                                </>
-                            ) : (
-                                <>
-                                    <span>{allCompleted && !section.testsEnabled ? 'Not Enabled' : 'Restricted'}</span>
-                                    <Lock size={14} />
-                                </>
-                            )}
-                        </button>
+                        <div className="module-info flex flex-col justify-center">
+                            <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${allCompleted ? 'text-indigo-500' : 'text-[var(--text-secondary)]'}`}>
+                                {allCompleted ? 'Validation Unlocked' : 'Module Locked'}
+                            </span>
+                            <h3 className={`text-base font-black uppercase tracking-tight mb-1 ${allCompleted ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)]'}`}>
+                                Final Assessment
+                            </h3>
+                            <p className="text-[var(--text-secondary)] text-[11px] font-medium max-w-lg leading-relaxed md:text-xs">
+                                {allCompleted
+                                    ? "Congratulations! You have successfully mastered the curriculum. You may now proceed."
+                                    : `To access the certification quiz, you must complete all ${uniqueLessons.length} learning modules above.`}
+                            </p>
+                        </div>
                     </div>
+
+                    <button
+                        onClick={handleStartQuiz}
+                        disabled={!allCompleted || !section.testsEnabled}
+                        className={`
+                            btn-view-material !rounded-full
+                            ${allCompleted && section.testsEnabled
+                                ? '!bg-indigo-600 !text-white !border-indigo-600 hover:!bg-indigo-700'
+                                : '!bg-red-50/50 !text-red-400 !border-red-100/50 hover:!bg-red-50/50 cursor-not-allowed dark:!bg-red-900/10 dark:!border-red-900/30'}
+                        `}
+                    >
+                        {allCompleted && section.testsEnabled ? (
+                            <>
+                                <span>Start Attempt</span>
+                                <ArrowRight size={14} />
+                            </>
+                        ) : (
+                            <>
+                                <span>{allCompleted && !section.testsEnabled ? 'Not Enabled' : 'Restricted'}</span>
+                                <Lock size={12} className="text-red-400" />
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
 
             {/* Quiz Modal */}
-            {showQuizModal && activeQuiz && (
-                <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[9999] flex items-center justify-center p-4">
-                    <div className="glass-card max-w-4xl w-full max-h-[90vh] flex flex-col animate-fade-in border border-indigo-500/20 shadow-[0_0_100px_-20px_rgba(99,102,241,0.3)] rounded-3xl overflow-hidden">
+            {showQuizModal && activeQuiz && createPortal(
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[99999] flex items-center justify-center p-4">
+                    <div className="max-w-4xl w-full max-h-[90vh] flex flex-col animate-fade-in border border-[var(--glass-border)] shadow-2xl rounded-3xl overflow-hidden bg-[var(--bg-card)]">
                         {/* Header */}
-                        <div className="p-8 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-indigo-900/20 to-black/20">
+                        <div className="p-8 border-b border-[var(--glass-border)] flex items-center justify-between bg-[var(--bg-subtle)]">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-indigo-500/20 rounded-xl text-indigo-400">
+                                <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-500">
                                     <HelpCircle size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black text-white uppercase tracking-tight">{activeQuiz.title}</h3>
-                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Assessment Session • {activeQuiz.questions.length} Questions</p>
+                                    <h3 className="text-2xl font-black text-[var(--text-primary)] uppercase tracking-tight">{activeQuiz.title}</h3>
+                                    <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-widest mt-1">Assessment Session • {activeQuiz.questions.length} Questions</p>
                                 </div>
                             </div>
-                            <button onClick={() => setShowQuizModal(false)} className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
+                            <button onClick={() => setShowQuizModal(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-2 hover:bg-[var(--bg-deep)] rounded-full">
                                 <X size={24} />
                             </button>
                         </div>
 
                         {/* Content */}
-                        <div className="p-10 overflow-y-auto custom-scrollbar flex-1 bg-[#050507]">
+                        <div className="p-10 overflow-y-auto custom-scrollbar flex-1 bg-[var(--bg-deep)]">
                             {!quizResult ? (
                                 <div className="space-y-10 max-w-3xl mx-auto">
                                     {activeQuiz.questions.map((q, idx) => (
                                         <div key={q.id} className="quiz-question group">
                                             <div className="flex gap-6">
-                                                <div className="text-indigo-500/30 font-black text-4xl leading-none select-none group-hover:text-indigo-500 transition-colors">
+                                                <div className="text-indigo-500/20 font-black text-4xl leading-none select-none group-hover:text-indigo-500 transition-colors">
                                                     {String(idx + 1).padStart(2, '0')}
                                                 </div>
                                                 <div className="flex-1 pt-2">
-                                                    <p className="text-xl font-bold text-gray-200 mb-6 leading-relaxed">{q.questionText}</p>
+                                                    <p className="text-xl font-bold text-[var(--text-primary)] mb-6 leading-relaxed">{q.questionText}</p>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {q.options && q.options.split(',').map((opt, optIdx) => (
-                                                            <label key={optIdx} className={`flex items-center gap-4 p-5 rounded-xl border transition-all cursor-pointer relative overflow-hidden ${userAnswers[q.id] === opt.trim() ? 'bg-indigo-600 text-white border-indigo-500 shadow-xl' : 'bg-[#121214] border-white/5 hover:border-white/10 text-gray-400'}`}>
+                                                            <label key={optIdx} className={`flex items-center gap-4 p-5 rounded-xl border transition-all cursor-pointer relative overflow-hidden ${userAnswers[q.id] === opt.trim() ? 'bg-indigo-600 text-white border-indigo-500 shadow-xl' : 'bg-[var(--bg-card)] border-[var(--glass-border)] hover:border-[var(--text-muted)] text-[var(--text-primary)]'}`}>
                                                                 <input
                                                                     type="radio"
                                                                     name={`q-${q.id}`}
@@ -320,7 +500,7 @@ const StudentCourseDetails = () => {
                                                                     onChange={() => handleAnswerChange(q.id, opt.trim())}
                                                                     className="hidden"
                                                                 />
-                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${userAnswers[q.id] === opt.trim() ? 'border-white' : 'border-gray-600'}`}>
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${userAnswers[q.id] === opt.trim() ? 'border-white' : 'border-[var(--text-muted)]'}`}>
                                                                     {userAnswers[q.id] === opt.trim() && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                                                                 </div>
                                                                 <span className="text-sm font-bold tracking-wide">{opt.trim()}</span>
@@ -347,7 +527,7 @@ const StudentCourseDetails = () => {
                                             style={{ width: `${quizResult.percentage}%` }}
                                         />
                                     </div>
-                                    <p className="text-gray-400 font-medium max-w-md mx-auto leading-relaxed text-lg">
+                                    <p className="text-[var(--text-secondary)] font-medium max-w-md mx-auto leading-relaxed text-lg">
                                         You have successfully validated your knowledge for this course module.
                                         {quizResult.percentage >= 70 ? ' Outstanding performance!' : ' Review the materials and try again.'}
                                     </p>
@@ -356,7 +536,7 @@ const StudentCourseDetails = () => {
                         </div>
 
                         {/* Footer */}
-                        <div className="p-8 border-t border-white/10 bg-[#0a0a0c] flex justify-end">
+                        <div className="p-8 border-t border-[var(--glass-border)] bg-[var(--bg-card)] flex justify-end">
                             {!quizResult ? (
                                 <button
                                     onClick={handleSubmitQuiz}
@@ -368,14 +548,15 @@ const StudentCourseDetails = () => {
                             ) : (
                                 <button
                                     onClick={() => setShowQuizModal(false)}
-                                    className="px-8 py-4 rounded-xl border border-white/10 text-white font-bold text-xs uppercase tracking-widest hover:bg-white/5 transition-colors"
+                                    className="px-8 py-4 rounded-xl border border-[var(--glass-border)] text-[var(--text-primary)] font-bold text-xs uppercase tracking-widest hover:bg-[var(--glass-bg-hover)] transition-colors"
                                 >
                                     Close Assessment
                                 </button>
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

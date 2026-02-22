@@ -1,101 +1,218 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import {
-    Users,
-    Calendar,
-    MessageSquare,
-    Heart,
-    TrendingUp,
-    Award,
-    Clock,
-    ChevronRight,
-    Loader,
-    CheckCircle2,
-    AlertCircle,
-    Bell,
-    Send,
-    BookOpen,
-    ArrowUpRight,
-    Zap
-} from 'lucide-react';
-import {
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    AreaChart,
-    Area
-} from 'recharts';
-
+import { Calendar, Plus, Users, ClipboardCheck, Bell, Loader, BookOpen, FileEdit, ArrowLeft, CheckCircle, List, LayoutGrid, Filter, MoreHorizontal, X, Clock, Trash2, Edit2, Smartphone } from 'lucide-react';
+import './Mentor.css';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
-import '../../pages/DashboardOverview.css';
-import './Mentor.css';
 
 const MentorDashboard = () => {
     const { currentUser, userData } = useAuth();
-    const [stats, setStats] = useState({
-        menteeCount: 0,
-        pendingMeetings: 2,
-        avgGpa: 3.54,
-        successRate: 92
-    });
-    const [recentMentees, setRecentMentees] = useState([]);
-    const [atRiskStudents, setAtRiskStudents] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [announcement, setAnnouncement] = useState("");
+    const [activeTab, setActiveTab] = useState('Only faculty');
+    const [activeMenteeFilter, setActiveMenteeFilter] = useState('All');
 
-    const menteeProgressData = [
-        { week: 'W1', avgGpa: 3.2 },
-        { week: 'W2', avgGpa: 3.4 },
-        { week: 'W3', avgGpa: 3.3 },
-        { week: 'W4', avgGpa: 3.6 },
-        { week: 'W5', avgGpa: 3.5 },
-        { week: 'W6', avgGpa: 3.8 },
-    ];
+    // Log Attendance States
+    const [isLoggingAttendance, setIsLoggingAttendance] = useState(false);
+    const [attendanceMode, setAttendanceMode] = useState('otp');
+    const [generatedOtp, setGeneratedOtp] = useState(null);
+    const [activeSessionId, setActiveSessionId] = useState(null);
+    const [otpVerifiedStudents, setOtpVerifiedStudents] = useState([]);
+
+    const [isViewingBoard, setIsViewingBoard] = useState(false);
+    const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+    const [editingTaskId, setEditingTaskId] = useState(null);
+    const [newTaskLabels, setNewTaskLabels] = useState(['PRIORITY']);
+
+    const [tasks, setTasks] = useState(() => {
+        const saved = localStorage.getItem('mentor_tasks');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const [newTaskData, setNewTaskData] = useState({
+        title: '',
+        assignee: 'Self',
+        column: 'Upcoming',
+        dueDate: '',
+        time: '',
+        description: ''
+    });
+
+    useEffect(() => {
+        localStorage.setItem('mentor_tasks', JSON.stringify(tasks));
+    }, [tasks]);
+
+    const handleSaveTask = () => {
+        if (!newTaskData.title.trim()) return;
+
+        const isFacultyTask = activeTab === 'Only faculty';
+
+        if (editingTaskId) {
+            setTasks(prev => prev.map(t => t.id === editingTaskId ? {
+                ...t,
+                ...newTaskData,
+                labels: newTaskLabels,
+                isFacultyTask: isFacultyTask,
+                updatedAt: new Date().toISOString()
+            } : t));
+        } else {
+            const newTask = {
+                id: Date.now().toString(),
+                ...newTaskData,
+                labels: newTaskLabels,
+                isFacultyTask: isFacultyTask,
+                createdAt: new Date().toISOString()
+            };
+            setTasks(prev => [...prev, newTask]);
+        }
+
+        closeTaskModal();
+    };
+
+    const handleEditTask = (task) => {
+        setEditingTaskId(task.id);
+        setNewTaskData({
+            title: task.title || '',
+            assignee: task.assignee || 'Self',
+            column: task.column || 'Upcoming',
+            dueDate: task.dueDate || '',
+            time: task.time || '',
+            description: task.description || ''
+        });
+        setNewTaskLabels(task.labels || []);
+        setIsNewTaskModalOpen(true);
+    };
+
+    const handleDeleteTask = (taskId) => {
+        if (window.confirm('Are you sure you want to delete this task?')) {
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+        }
+    };
+
+    const closeTaskModal = () => {
+        setIsNewTaskModalOpen(false);
+        setEditingTaskId(null);
+        setNewTaskData({
+            title: '',
+            assignee: 'Self',
+            column: 'Upcoming',
+            dueDate: '',
+            time: '',
+            description: ''
+        });
+        setNewTaskLabels(['PRIORITY']);
+    };
+
+    const openCreateTaskModal = (colName = 'Upcoming') => {
+        setEditingTaskId(null);
+        setNewTaskData({
+            title: '',
+            assignee: 'Self',
+            column: colName,
+            dueDate: '',
+            time: '',
+            description: ''
+        });
+        setNewTaskLabels(['PRIORITY']);
+        setIsNewTaskModalOpen(true);
+    };
+
+    const handleInputChange = (field, value) => {
+        setNewTaskData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const getColTasks = (colName) => {
+        const isFacultyTask = activeTab === 'Only faculty';
+        return tasks.filter(t =>
+            t.column.toLowerCase() === colName.toLowerCase() &&
+            (t.isFacultyTask === isFacultyTask || t.isFacultyTask === undefined)
+        );
+    };
+
+    const [selectedSectionId, setSelectedSectionId] = useState('');
+    const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [availableSchedules, setAvailableSchedules] = useState([]);
+    const [selectedScheduleId, setSelectedScheduleId] = useState('');
+    const [roster, setRoster] = useState([]);
+    const [attendanceData, setAttendanceData] = useState({});
+
+    const [loading, setLoading] = useState(true);
+    const [mentees, setMentees] = useState([]);
+    const [meetings, setMeetings] = useState([]);
+    const [facultySections, setFacultySections] = useState([]);
+    const [stats, setStats] = useState({
+        activeMentees: 0,
+        openConcerns: 0,
+        pendingCheckIns: 0,
+        alertsHigh: 0,
+        alertsLow: 0,
+        sessionsThisMonth: 0,
+        lowGpaCount: 0,
+        activeCourses: 0,
+        totalStudentsTaught: 0
+    });
+
+    useEffect(() => {
+        if (userData && userData.role === 'TEACHER') {
+            setActiveTab('Only faculty');
+        }
+    }, [userData]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             if (!currentUser) return;
             try {
+                // Fetch mentees
                 const menteesRes = await api.get(`/users/mentees/${currentUser.uid}`);
-                const mentees = menteesRes.data;
+                const menteesData = menteesRes.data || [];
 
+                // Fetch meetings
                 const meetingsRes = await api.get(`/meetings/mentor/${currentUser.uid}`);
-                const meetings = meetingsRes.data;
+                const meetingsData = meetingsRes.data || [];
 
-                // Process Pending Meetings for Today
+                // Fetch faculty sections
+                const sectionsRes = await api.get(`/courses/sections/faculty/${currentUser.uid}`);
+                const sectionsData = sectionsRes.data || [];
+
+                setMentees(menteesData);
+                setMeetings(meetingsData);
+                setFacultySections(sectionsData);
+
+                // Calculate stats
                 const today = new Date().toDateString();
-                const pendingCount = meetings.filter(m =>
-                    m.status === 'SCHEDULED' && new Date(m.startTime).toDateString() === today
+                const currentMonth = new Date().getMonth();
+
+                const pendingCount = meetingsData.filter(m =>
+                    m.status === 'SCHEDULED' && new Date(m.startTime).toDateString() >= today
                 ).length;
 
-                setRecentMentees(mentees.slice(0, 3));
-                const atRisk = mentees.filter(m => (m.gpa && m.gpa < 5.0) || (m.attendance && m.attendance < 75));
-                setAtRiskStudents(atRisk);
+                const sessionsThisMonth = meetingsData.filter(m =>
+                    new Date(m.startTime).getMonth() === currentMonth
+                ).length;
 
-                if (mentees.length > 0) {
-                    const totalGpa = mentees.reduce((acc, m) => acc + (m.gpa || 0), 0);
-                    // Mock success rate based on mentees with > 5.0 GPA (assuming 10 scale) or Arrears = 0
-                    // If no GPA data, default to high success
-                    const successfulMentees = mentees.filter(m => (m.gpa || 10) >= 5.0 && (m.arrearCount || 0) === 0).length;
-                    const successRate = Math.round((successfulMentees / mentees.length) * 100);
+                const lowGpaCount = menteesData.filter(m => {
+                    const gpa = m.studentDetails?.gpa || m.gpa;
+                    return gpa && gpa < 7.0;
+                }).length;
 
-                    setStats({
-                        menteeCount: mentees.length,
-                        pendingMeetings: pendingCount,
-                        avgGpa: (mentees.length ? (totalGpa / mentees.length).toFixed(2) : "0.00"),
-                        successRate: successRate
-                    });
-                } else {
-                    setStats({
-                        menteeCount: 0,
-                        pendingMeetings: pendingCount,
-                        avgGpa: "0.00",
-                        successRate: 0
-                    });
-                }
+                const openConcernsCount = menteesData.filter(m => {
+                    const attendance = m.studentDetails?.attendance || m.attendance;
+                    return attendance && attendance < 75;
+                }).length;
+
+                const totalStudentsTaught = sectionsData.reduce((sum, sec) => sum + (sec.enrollmentCount || 0), 0);
+                // Simple mock logic for pending grading (just count sections)
+                const pendingGradingCount = sectionsData.length * 2;
+
+                setStats({
+                    activeMentees: menteesData.length,
+                    openConcerns: openConcernsCount,
+                    pendingCheckIns: pendingCount,
+                    alertsHigh: openConcernsCount > 0 ? 1 : 0,
+                    alertsLow: lowGpaCount > 0 ? 1 : 0,
+                    sessionsThisMonth: sessionsThisMonth,
+                    lowGpaCount: lowGpaCount,
+                    activeCourses: sectionsData.length,
+                    totalStudentsTaught: totalStudentsTaught,
+                    pendingGrading: pendingGradingCount
+                });
 
             } catch (err) {
                 console.error("Error fetching mentor dashboard data:", err);
@@ -107,224 +224,1343 @@ const MentorDashboard = () => {
         fetchDashboardData();
     }, [currentUser]);
 
-    const handleBroadcast = (e) => {
-        e.preventDefault();
-        if (!announcement.trim()) return;
-        alert(`Announcement sent to ${stats.menteeCount} mentees: ${announcement}`);
-        setAnnouncement("");
+    useEffect(() => {
+        const fetchSchedules = async () => {
+            if (!selectedSectionId || !selectedDate) {
+                setAvailableSchedules([]);
+                return;
+            }
+            const sec = facultySections.find(s => s.id === parseInt(selectedSectionId) || s.id === selectedSectionId);
+            if (!sec) return;
+
+            try {
+                const res = await api.get(`/schedules/search?date=${selectedDate}&subjectName=${encodeURIComponent(sec.course?.name || '')}`);
+                setAvailableSchedules(res.data || []);
+                if (res.data && res.data.length > 0) {
+                    setSelectedScheduleId(res.data[0].id);
+                } else {
+                    setSelectedScheduleId('');
+                }
+            } catch (e) {
+                console.error("Failed to fetch schedules for date", e);
+                setAvailableSchedules([]);
+            }
+        };
+        fetchSchedules();
+    }, [selectedSectionId, selectedDate, facultySections]);
+
+    // Fetch roster when secton selected in Log Attendance
+    useEffect(() => {
+        const fetchRoster = async () => {
+            if (!selectedSectionId) {
+                setRoster([]);
+                setOtpVerifiedStudents([]);
+                return;
+            }
+            try {
+                const res = await api.get(`/courses/sections/${selectedSectionId}/enrollments`);
+                setRoster(res.data || []);
+
+                const initialData = {};
+                (res.data || []).forEach(enrollment => {
+                    initialData[enrollment.student.id] = { status: null, remark: '' };
+                });
+                setAttendanceData(initialData);
+
+                let fetchId = null;
+                let isActive = false;
+
+                // Try fetching active session
+                try {
+                    const activeRes = await api.get(`/course-attendance/sessions/section/${selectedSectionId}/active`);
+                    if (activeRes.data && activeRes.data.id) {
+                        fetchId = activeRes.data.id;
+                        isActive = true;
+                        setGeneratedOtp(activeRes.data.otp);
+                        setActiveSessionId(fetchId);
+                    }
+                } catch (e) {
+                    setActiveSessionId(null);
+                    setGeneratedOtp(null);
+                }
+
+                // If not active, try fetching today's last session
+                if (!fetchId) {
+                    try {
+                        const sessionsRes = await api.get(`/course-attendance/sessions/section/${selectedSectionId}`);
+                        const sessions = sessionsRes.data || [];
+                        const today = new Date().toDateString();
+                        const todaySession = sessions.find(s => new Date(s.createdAt).toDateString() === today);
+                        if (todaySession) fetchId = todaySession.id;
+                    } catch (e) { }
+                }
+
+                if (fetchId) {
+                    try {
+                        const attRes = await api.get(`/course-attendance/sessions/${fetchId}/attendances`);
+                        const attendances = attRes.data || [];
+                        setOtpVerifiedStudents(attendances);
+
+                        const ongoingData = { ...initialData };
+                        if (isActive) {
+                            Object.keys(ongoingData).forEach(k => ongoingData[k].status = 'A');
+                        }
+                        attendances.forEach(att => {
+                            if (att.student && ongoingData[att.student.id]) {
+                                ongoingData[att.student.id].status = att.status;
+                                ongoingData[att.student.id].markedAt = att.markedAt;
+                            }
+                        });
+                        setAttendanceData(ongoingData);
+                    } catch (e) {
+                        setOtpVerifiedStudents([]);
+                    }
+                } else {
+                    setOtpVerifiedStudents([]);
+                }
+
+            } catch (e) {
+                console.error("Failed to fetch roster", e);
+            }
+        };
+        fetchRoster();
+    }, [selectedSectionId]);
+
+    const getInitials = (name) => {
+        if (!name) return 'S';
+        return name.charAt(0).toUpperCase();
     };
 
-    if (loading) return <div className="loading-screen"><Loader className="animate-spin" /></div>;
+    const getBgClass = (index) => {
+        const classes = ['bg-indigo', 'bg-purple', 'bg-blue', 'bg-dark'];
+        return classes[index % classes.length];
+    };
 
-    return (
-        <div className="dashboard-overview mentor-premium">
-            <header className="page-header">
-                <div className="header-greeting">
-                    <h1>Welcome back, Mentor {userData?.fullName?.split(' ')[0]}!</h1>
-                    <p>You have {stats.menteeCount} students under your guidance. Here's a summary of their progress.</p>
-                </div>
-                <div className="header-controls">
-                    <div className="header-date glass-card">
-                        <Calendar size={18} />
-                        <span>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
-                </div>
-            </header>
+    const formatDate = () => {
+        const options = { day: 'numeric', month: 'short', year: 'numeric' };
+        return new Date().toLocaleDateString('en-GB', options);
+    };
 
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon courses"><Users /></div>
-                    <div className="stat-info">
-                        <span className="label">Total Mentees</span>
-                        <span className="value">{stats.menteeCount} Students</span>
-                    </div>
-                    <div className="stat-badge positive"><ArrowUpRight size={12} /> 12%</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon attendance"><Calendar /></div>
-                    <div className="stat-info">
-                        <span className="label">Meetings</span>
-                        <span className="value">{stats.pendingMeetings} Today</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon gpa"><TrendingUp /></div>
-                    <div className="stat-info">
-                        <span className="label">Avg Mentee GPA</span>
-                        <span className="value">{stats.avgGpa}</span>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon tasks"><Award /></div>
-                    <div className="stat-info">
-                        <span className="label">Current Success</span>
-                        <span className="value">{stats.successRate}%</span>
-                    </div>
-                </div>
+    // Filter Mentees
+    const filteredMentees = mentees.filter(mentee => {
+        if (activeMenteeFilter === 'All') return true;
+
+        const gpa = mentee.studentDetails?.gpa || mentee.gpa;
+        const attendance = mentee.studentDetails?.attendance || mentee.attendance;
+
+        if (activeMenteeFilter === 'Action required') {
+            return (gpa && gpa < 7.0) || (attendance && attendance < 75);
+        }
+        return true;
+    });
+
+    useEffect(() => {
+        let interval;
+        const fetchLiveAttendances = async () => {
+            if (activeSessionId) {
+                try {
+                    const res = await api.get(`/course-attendance/sessions/${activeSessionId}/attendances`);
+                    const attendances = res.data || [];
+
+                    setOtpVerifiedStudents(attendances);
+
+                    setAttendanceData(prev => {
+                        const next = { ...prev };
+                        attendances.forEach(att => {
+                            if (att.student && next[att.student.id]) {
+                                next[att.student.id].status = att.status;
+                                next[att.student.id].markedAt = att.markedAt;
+                            }
+                        });
+                        return next;
+                    });
+                } catch (e) {
+                    console.error("Failed to fetch live attendances", e);
+                }
+            }
+        };
+
+        if (generatedOtp && activeSessionId) {
+            interval = setInterval(fetchLiveAttendances, 3000);
+        }
+
+        return () => clearInterval(interval);
+    }, [generatedOtp, activeSessionId]);
+
+    if (loading) {
+        return (
+            <div className="mw-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <Loader className="animate-spin text-indigo-500" size={40} />
             </div>
+        );
+    }
 
+    const isFaculty = activeTab === 'Only faculty';
 
+    const handleLogAttendanceClick = () => {
+        setIsLoggingAttendance(true);
+        setAttendanceMode('otp');
+        setGeneratedOtp(null);
+        setActiveSessionId(null);
+        if (facultySections.length > 0 && !selectedSectionId) {
+            setSelectedSectionId(facultySections[0].id);
+        }
+    };
 
-            <div className="dashboard-grid">
-                <div className="main-content-area">
-                    {/* Performance Chart */}
-                    <div className="chart-section glass-card">
-                        <div className="card-header">
-                            <div>
-                                <h3>Mentee Performance Trend</h3>
-                                <p className="subtitle">Average success rate across departments</p>
-                            </div>
-                            <div className="card-actions">
-                                <select className="mini-select">
-                                    <option>Monthly</option>
-                                    <option>Weekly</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="chart-container">
-                            <ResponsiveContainer width="100%" height={300}>
-                                <AreaChart data={menteeProgressData}>
-                                    <defs>
-                                        <linearGradient id="colorGpa" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                                    <XAxis dataKey="week" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[0, 4]} />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff' }}
-                                    />
-                                    <Area type="monotone" dataKey="avgGpa" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorGpa)" strokeWidth={3} />
-                                </AreaChart>
-                            </ResponsiveContainer>
+    const generateOtp = async () => {
+        if (!selectedSectionId) {
+            alert("Please select a section first.");
+            return;
+        }
+        try {
+            const res = await api.post(`/course-attendance/sessions/generate/${selectedSectionId}?facultyUid=${currentUser.uid}`);
+            setGeneratedOtp(res.data.otp);
+            setActiveSessionId(res.data.id);
+            setOtpVerifiedStudents([]);
+
+            // Set all to Absent initially for OTP tracking
+            setAttendanceData(prev => {
+                const next = { ...prev };
+                Object.keys(next).forEach(k => {
+                    next[k].status = 'A';
+                });
+                return next;
+            });
+        } catch (e) {
+            console.error("Failed to generate OTP:", e);
+            alert("Could not generate OTP session. " + (e.response?.data?.message || e.message));
+        }
+    };
+
+    const stopOtpSession = async () => {
+        if (!activeSessionId) return;
+        try {
+            await api.post(`/course-attendance/sessions/${activeSessionId}/deactivate?facultyUid=${currentUser.uid}`);
+            setGeneratedOtp(null);
+            setActiveSessionId(null);
+        } catch (e) {
+            console.error("Failed to deactivate session:", e);
+            alert("Failed to close session properly.");
+        }
+    };
+
+    const formatTime = (timeData) => {
+        if (!timeData) return '';
+        if (typeof timeData === 'string') return timeData.substring(0, 5);
+        if (Array.isArray(timeData) && timeData.length >= 2) {
+            const h = timeData[0].toString().padStart(2, '0');
+            const m = timeData[1].toString().padStart(2, '0');
+            return `${h}:${m}`;
+        }
+        return '';
+    };
+
+    const handleStatusChange = (studentId, status) => {
+        setAttendanceData(prev => ({
+            ...prev,
+            [studentId]: { ...prev[studentId], status }
+        }));
+    };
+
+    const handleRemarkChange = (studentId, remark) => {
+        setAttendanceData(prev => ({
+            ...prev,
+            [studentId]: { ...prev[studentId], remark }
+        }));
+    };
+
+    const markAllPresent = () => {
+        setAttendanceData(prev => {
+            const next = { ...prev };
+            Object.keys(next).forEach(k => {
+                next[k].status = 'P';
+            });
+            return next;
+        });
+    };
+
+    const handleSaveAttendance = async () => {
+        if (!selectedSectionId) return;
+
+        const payload = Object.entries(attendanceData)
+            .filter(([_, data]) => data.status) // Only include students that have a status explicitly set
+            .map(([studentId, data]) => ({
+                studentId,
+                status: data.status,
+                remark: data.remark
+            }));
+
+        if (payload.length === 0) {
+            alert("Please mark attendance (P/A/L) for at least one student before saving.");
+            return;
+        }
+
+        try {
+            await api.post(`/course-attendance/sessions/bulk/${selectedSectionId}?facultyUid=${currentUser.uid}`, payload);
+            alert("Attendance saved successfully!");
+            setIsLoggingAttendance(false); // Go back to dashboard screen
+        } catch (e) {
+            console.error("Error saving attendance", e);
+            alert("Failed to save attendance.");
+        }
+    };
+
+    const renderLogAttendanceView = () => {
+        const totalEnrolled = roster.length;
+        let present = 0, absent = 0, late = 0;
+
+        Object.values(attendanceData).forEach(d => {
+            if (d.status === 'P') present++;
+            if (d.status === 'A') absent++;
+            if (d.status === 'L') late++;
+        });
+
+        return (
+            <div className="mw-card" style={{ marginTop: '20px' }}>
+                <div className="log-att-header-row">
+                    <div className="log-att-title-group">
+                        <button className="back-btn" onClick={() => setIsLoggingAttendance(false)}>
+                            <ArrowLeft size={18} />
+                        </button>
+                        <div className="log-att-title-text">
+                            <h1>Log Attendance</h1>
+                            <p>Select a class and record attendance for today's session.</p>
                         </div>
                     </div>
-
-                    <div className="bottom-grid">
-                        {/* Broadcast Section */}
-                        <div className="broadcast-section glass-card">
-                            <div className="card-header">
-                                <div className="header-with-icon">
-                                    <Zap size={20} className="text-primary" />
-                                    <h3>Quick Announcement</h3>
-                                </div>
-                            </div>
-                            <form onSubmit={handleBroadcast} className="broadcast-form">
-                                <textarea
-                                    placeholder="Type a message to all your mentees..."
-                                    value={announcement}
-                                    onChange={(e) => setAnnouncement(e.target.value)}
-                                ></textarea>
-                                <button type="submit" className="btn btn-primary broadcast-btn">
-                                    <Send size={16} />
-                                    Broadcast
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* Resource Links */}
-                        <div className="resources-section glass-card">
-                            <div className="card-header">
-                                <h3>Quick Resources</h3>
-                            </div>
-                            <div className="resource-list">
-                                <a href="#" className="resource-item">
-                                    <div className="resource-icon b1"><BookOpen size={16} /></div>
-                                    <span>Mentoring Guidelines</span>
-                                </a>
-                                <a href="#" className="resource-item">
-                                    <div className="resource-icon b2"><Bell size={16} /></div>
-                                    <span>Faculty Notices</span>
-                                </a>
-                                <a href="#" className="resource-item">
-                                    <div className="resource-icon b3"><MessageSquare size={16} /></div>
-                                    <span>Counseling PPTs</span>
-                                </a>
-                            </div>
-                        </div>
+                    <div className="log-att-actions">
+                        <button className="mw-btn-outline" onClick={() => setIsLoggingAttendance(false)}>Cancel</button>
+                        {attendanceMode === 'manual' && (
+                            <button className="mw-btn-primary" onClick={handleSaveAttendance}>Save Attendance</button>
+                        )}
                     </div>
-
-
                 </div>
 
-                <div className="sidebar-area">
-                    {/* At Risk Section */}
-                    {atRiskStudents.length > 0 && (
-                        <div className="risk-alerts-section glass-card">
-                            <div className="card-header">
-                                <div className="header-with-icon">
-                                    <AlertCircle size={20} className="text-danger" />
-                                    <h3>At-Risk Students</h3>
-                                </div>
-                            </div>
-                            <div className="risk-list">
-                                {atRiskStudents.map(student => (
-                                    <div key={student.id} className="risk-item">
-                                        <div className="risk-info">
-                                            <h4>{student.fullName}</h4>
-                                            <p>{student.department} • GPA: {student.gpa || 'N/A'}</p>
-                                        </div>
-                                        <div className="risk-tag">Intervene</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Recent Mentees */}
-                    <div className="recent-mentees-section glass-card">
-                        <div className="card-header">
-                            <h3>Recent Mentees</h3>
-                            <button className="btn-text">View All</button>
-                        </div>
-                        <div className="mentee-mini-list">
-                            {recentMentees.length > 0 ? recentMentees.map(mentee => (
-                                <div key={mentee.id} className="mentee-mini-item">
-                                    <div className="mini-avatar">{mentee.fullName.charAt(0)}</div>
-                                    <div className="mini-info">
-                                        <h4>{mentee.fullName}</h4>
-                                        <span>{mentee.email}</span>
-                                    </div>
-                                    <div className="mini-status">
-                                        {mentee.gpa > 3.5 ? <CheckCircle2 size={16} color="#10b981" /> : <AlertCircle size={16} color="#f59e0b" />}
-                                    </div>
-                                </div>
+                <div className="log-att-form-grid">
+                    <div className="form-group">
+                        <label>Class & Section</label>
+                        <select
+                            className="form-control"
+                            value={selectedSectionId}
+                            onChange={(e) => setSelectedSectionId(e.target.value)}
+                        >
+                            <option value="">Select a section</option>
+                            {facultySections.map(sec => (
+                                <option key={sec.id} value={sec.id}>
+                                    {sec.course?.code} - {sec.course?.name} (Sem {sec.semester} {sec.course?.department})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Date</label>
+                        <input type="date" className="form-control" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <label>Session Type</label>
+                        <select className="form-control" value={selectedScheduleId} onChange={(e) => setSelectedScheduleId(e.target.value)}>
+                            {availableSchedules.length > 0 ? availableSchedules.map(sch => (
+                                <option key={sch.id} value={sch.id}>
+                                    {sch.type.replace('_', ' ')} ({formatTime(sch.startTime)} - {formatTime(sch.endTime)})
+                                </option>
                             )) : (
-                                <div className="empty-mini-state">
-                                    <p>No mentees assigned yet.</p>
+                                <option value="">No Schedule Found</option>
+                            )}
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Topic Covered</label>
+                        <input type="text" className="form-control" placeholder="Add topic..." />
+                    </div>
+                </div>
+
+                <div className="log-att-summary-bar">
+                    <div className="summary-stat">
+                        <div className="stat-dot dot-purple"></div> Total Enrolled: {totalEnrolled}
+                    </div>
+                    <div className="summary-stat">
+                        <div className="stat-dot dot-green"></div> Present: {present}
+                    </div>
+                    <div className="summary-stat">
+                        <div className="stat-dot dot-red"></div> Absent: {absent}
+                    </div>
+                    <div className="summary-stat">
+                        <div className="stat-dot dot-yellow"></div> Late: {late}
+                    </div>
+                </div>
+
+                <div className="roster-header" style={{ marginTop: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="mw-tabs" style={{ marginBottom: 0 }}>
+                        <button
+                            onClick={() => setAttendanceMode('otp')}
+                            className={`mw-tab-btn ${attendanceMode === 'otp' ? 'active' : ''}`}
+                        >
+                            <Smartphone size={14} style={{ marginRight: '6px', verticalAlign: 'middle', display: 'inline' }} /> OTP Verification
+                        </button>
+                        <button
+                            onClick={() => setAttendanceMode('manual')}
+                            className={`mw-tab-btn ${attendanceMode === 'manual' ? 'active' : ''}`}
+                        >
+                            <List size={14} style={{ marginRight: '6px', verticalAlign: 'middle', display: 'inline' }} /> Manual Entry
+                        </button>
+                    </div>
+
+                    {attendanceMode === 'manual' && (
+                        <button className="mw-text-btn" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={markAllPresent}>
+                            <CheckCircle size={14} /> Mark all as Present
+                        </button>
+                    )}
+                </div>
+
+                {attendanceMode === 'otp' ? (
+                    <div className="otp-attendance-layout" style={{ display: 'flex', gap: '24px', alignItems: 'stretch' }}>
+                        {/* LEFT COLUMN: OTP GENERATION / DISPLAY */}
+                        <div className="otp-control-panel" style={{ flex: '1', backgroundColor: '#ffffff', padding: '32px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                            {!generatedOtp ? (
+                                <div className="generate-otp-prompt" style={{ textAlign: 'center', margin: '40px auto' }}>
+                                    <Smartphone size={48} color="#6366f1" style={{ margin: '0 auto 20px' }} />
+                                    <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '12px', color: '#1e293b' }}>Generate Session OTP</h2>
+                                    <p style={{ color: '#64748b', fontSize: '15px', marginBottom: '30px' }}>Students will enter this one-time password in their application to mark themselves present.</p>
+                                    <button
+                                        onClick={generateOtp}
+                                        style={{ padding: '12px 24px', backgroundColor: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '500', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px rgba(99, 102, 241, 0.2)' }}
+                                    >
+                                        <Clock size={18} /> Enable OTP Sign-in
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="active-otp-display" style={{ textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '16px' }}>
+                                        <span style={{ height: '10px', width: '10px', backgroundColor: '#10b981', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 10px rgba(16, 185, 129, 0.6)' }} className="pulse-dot"></span>
+                                        <span style={{ color: '#10b981', fontWeight: '600', fontSize: '14px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Sign-in Active</span>
+                                    </div>
+                                    <div className="otp-code-box" style={{ backgroundColor: '#f8fafc', border: '2px dashed #cbd5e1', borderRadius: '16px', padding: '40px 20px', marginBottom: '30px' }}>
+                                        <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', color: '#64748b', fontWeight: '500' }}>Tell students to enter code:</h3>
+                                        <div style={{ letterSpacing: '12px', fontSize: '64px', fontWeight: '800', fontFamily: 'monospace', color: '#334155' }}>
+                                            {generatedOtp}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ebf8ff', padding: '16px', borderRadius: '8px', borderLeft: '4px solid #3182ce' }}>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#2c5282', fontWeight: '600' }}>Live Progress</p>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#4a5568' }}>{present} of {totalEnrolled} students verified today</p>
+                                        </div>
+                                        <button
+                                            onClick={stopOtpSession}
+                                            style={{ backgroundColor: 'white', color: '#ef4444', border: '1px solid #fecaca', padding: '8px 16px', borderRadius: '6px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}
+                                        >
+                                            Stop OTP Session
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* RIGHT COLUMN: RECENTLY VERIFIED CARDS */}
+                        <div className="otp-participants-panel" style={{ width: '420px', backgroundColor: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+                            <h4 style={{ margin: '0 0 20px 0', color: '#1e293b', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Users size={18} className="text-indigo-500" /> Today's Verified Students ({otpVerifiedStudents.length})
+                            </h4>
+                            {otpVerifiedStudents.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '500px', paddingRight: '4px' }}>
+                                    {otpVerifiedStudents.map((att, idx) => {
+                                        const timeStr = att.markedAt ? new Date(att.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now";
+                                        return (
+                                            <div key={att.student?.id || idx} className="fade-in-badge" style={{ padding: '16px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: 'fadeDown 0.3s ease-out forwards', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <div style={{ backgroundColor: '#ecfdf5', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <CheckCircle size={18} color="#10b981" />
+                                                    </div>
+                                                    <div>
+                                                        <span style={{ fontSize: '15px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '2px' }}>{att.studentName || att.student?.fullName || 'Unknown Student'}</span>
+                                                        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>{att.studentRollNumber || att.student?.rollNumber || 'Verified ID'}</span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f1f5f9', padding: '4px 8px', borderRadius: '6px' }}>
+                                                    <Clock size={14} /> {timeStr}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', backgroundColor: 'white', borderRadius: '12px', border: '1px dashed #cbd5e1', padding: '32px 20px' }}>
+                                    {generatedOtp ? (
+                                        <>
+                                            <Loader size={28} className="animate-spin text-slate-400" style={{ margin: '0 auto 12px auto' }} />
+                                            <h5 style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#334155', fontWeight: '600' }}>Waiting for Responses</h5>
+                                            <p style={{ margin: 0, color: '#64748b', fontSize: '13px', lineHeight: '1.5' }}>As students enter the code, their verification cards will appear here.</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ClipboardCheck size={32} color="#cbd5e1" style={{ margin: '0 auto 12px auto' }} />
+                                            <h5 style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#334155', fontWeight: '600' }}>No attendances yet</h5>
+                                            <p style={{ margin: 0, color: '#64748b', fontSize: '13px', lineHeight: '1.5' }}>Generate an OTP to start tracking presences today.</p>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
                     </div>
+                ) : (
+                    <table className="roster-table">
+                        <thead>
+                            <tr>
+                                <th>STUDENT</th>
+                                <th>STATUS</th>
+                                <th>REMARKS (OPTIONAL)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {roster.map((enrollment, idx) => {
+                                const student = enrollment.student;
+                                const currentStatus = attendanceData[student.id]?.status || null;
+                                const currentRemark = attendanceData[student.id]?.remark || '';
 
-                    {/* Tasks */}
-                    <div className="priority-tasks glass-card">
-                        <div className="card-header">
-                            <h3>Priority Tasks</h3>
+                                return (
+                                    <tr key={student.id}>
+                                        <td>
+                                            <div className="student-cell">
+                                                <div className={`mentee-avatar ${getBgClass(idx)}`}>
+                                                    {getInitials(student.fullName)}
+                                                </div>
+                                                <div>
+                                                    <h4>{student.fullName}</h4>
+                                                    <p>Roll No: {student.rollNumber || `CS2300${idx + 1}`}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="status-toggles">
+                                                <button
+                                                    className={`toggle-btn btn-p ${currentStatus === 'P' ? 'active' : ''}`}
+                                                    onClick={() => handleStatusChange(student.id, 'P')}
+                                                >
+                                                    P
+                                                </button>
+                                                <button
+                                                    className={`toggle-btn btn-a ${currentStatus === 'A' ? 'active' : ''}`}
+                                                    onClick={() => handleStatusChange(student.id, 'A')}
+                                                >
+                                                    A
+                                                </button>
+                                                <button
+                                                    className={`toggle-btn btn-l ${currentStatus === 'L' ? 'active' : ''}`}
+                                                    onClick={() => handleStatusChange(student.id, 'L')}
+                                                >
+                                                    L
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input
+                                                type="text"
+                                                className="remark-input"
+                                                placeholder="Add remark..."
+                                                value={currentRemark}
+                                                onChange={(e) => handleRemarkChange(student.id, e.target.value)}
+                                            />
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {roster.length === 0 && (
+                                <tr>
+                                    <td colSpan="3" style={{ textAlign: 'center', padding: '20px' }}>No students enrolled in this section.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        );
+    }
+
+    const renderNewTaskModal = () => {
+        if (!isNewTaskModalOpen) return null;
+
+        return (
+            <div className="task-modal-overlay">
+                <div className="task-modal-card animate-slide-up">
+                    <div className="task-modal-header">
+                        <h2>{editingTaskId ? 'Edit Task' : 'New Task'}</h2>
+                        <button className="task-modal-close" onClick={closeTaskModal}>
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    <div className="task-modal-body">
+                        <div className="task-form-group">
+                            <label className="task-form-label">Task Title</label>
+                            <input
+                                type="text"
+                                className="task-form-input"
+                                placeholder="e.g. Schedule check-in"
+                                value={newTaskData.title}
+                                onChange={e => handleInputChange('title', e.target.value)}
+                            />
                         </div>
-                        <div className="deadline-list">
-                            <div className="deadline-item">
-                                <div className="deadline-icon cs"><MessageSquare /></div>
-                                <div className="deadline-info">
-                                    <h4>Counseling Request</h4>
-                                    <p>Rahul S. • Personal</p>
-                                </div>
-                                <ChevronRight className="item-arrow" size={16} />
+
+                        <div className="task-form-row">
+                            <div className="task-form-group half-width">
+                                <label className="task-form-label">Assignee</label>
+                                <select
+                                    className="task-form-select"
+                                    value={newTaskData.assignee}
+                                    onChange={e => handleInputChange('assignee', e.target.value)}
+                                >
+                                    <option>Self</option>
+                                    <option>Rahul S</option>
+                                    <option>Priya M</option>
+                                </select>
                             </div>
-                            <div className="deadline-item">
-                                <div className="deadline-icon physics"><Heart /></div>
-                                <div className="deadline-info">
-                                    <h4>Well-being Alert</h4>
-                                    <p>3 Alerts detected</p>
+                            <div className="task-form-group half-width">
+                                <label className="task-form-label">Board Column</label>
+                                <select
+                                    className="task-form-select"
+                                    value={newTaskData.column}
+                                    onChange={e => handleInputChange('column', e.target.value)}
+                                >
+                                    <option>Upcoming</option>
+                                    <option>This Week</option>
+                                    <option>Later</option>
+                                    <option>Completed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="task-form-row">
+                            <div className="task-form-group half-width">
+                                <label className="task-form-label">Due Date</label>
+                                <div className="input-icon-wrap">
+                                    <Calendar size={16} />
+                                    <input
+                                        type="date"
+                                        className="task-form-input has-icon"
+                                        value={newTaskData.dueDate}
+                                        onChange={e => handleInputChange('dueDate', e.target.value)}
+                                    />
                                 </div>
-                                <ChevronRight className="item-arrow" size={16} />
+                            </div>
+                            <div className="task-form-group half-width">
+                                <label className="task-form-label">Time (Optional)</label>
+                                <div className="input-icon-wrap">
+                                    <Clock size={16} />
+                                    <input
+                                        type="time"
+                                        className="task-form-input has-icon"
+                                        value={newTaskData.time}
+                                        onChange={e => handleInputChange('time', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="task-form-group">
+                            <label className="task-form-label">Labels</label>
+                            <div className="task-labels-container">
+                                {[
+                                    { id: 'PRIORITY', color: 'orange' },
+                                    { id: 'MEETING', color: 'blue-indigo' },
+                                    { id: 'CAREER', color: 'blue' },
+                                    { id: 'ACADEMIC', color: 'yellow' },
+                                    { id: 'ADMIN', color: 'gray' },
+                                ].map(label => (
+                                    <span
+                                        key={label.id}
+                                        className={`task-label-chip ${newTaskLabels.includes(label.id) ? `selected ${label.color}` : ''}`}
+                                        onClick={() => setNewTaskLabels(prev =>
+                                            prev.includes(label.id)
+                                                ? prev.filter(l => l !== label.id)
+                                                : [...prev, label.id]
+                                        )}
+                                    >
+                                        {label.id}
+                                    </span>
+                                ))}
+                                <button className="task-add-label-btn"><Plus size={12} /> NEW LABEL</button>
+                            </div>
+                        </div>
+
+                        <div className="task-form-group">
+                            <label className="task-form-label">Description</label>
+                            <textarea
+                                className="task-form-input"
+                                placeholder="Add details or agenda for this task..."
+                                rows={3}
+                                style={{ resize: 'none' }}
+                                value={newTaskData.description}
+                                onChange={e => handleInputChange('description', e.target.value)}
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div className="task-modal-footer">
+                        <button className="task-cancel-btn" onClick={closeTaskModal}>Cancel</button>
+                        <button className="task-create-btn" onClick={handleSaveTask}>{editingTaskId ? 'Save Changes' : 'Create Task'}</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const getLabelColor = (labelName) => {
+        const mapping = {
+            'PRIORITY': 'orange',
+            'MEETING': 'blue-indigo',
+            'CAREER': 'blue',
+            'ACADEMIC': 'yellow',
+            'ADMIN': 'gray',
+            'REVIEW': 'blue',
+            'GROUP ACTIVITY': 'yellow',
+            'DONE': 'green'
+        };
+        return mapping[labelName] || 'gray';
+    };
+
+    const renderCard = (task) => (
+        <div className="board-card-item" key={task.id} style={{ opacity: task.column === 'Completed' ? 0.7 : 1, position: 'relative' }}>
+            <div className="card-actions" style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}>
+                <button onClick={() => handleEditTask(task)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                    <Edit2 size={14} />
+                </button>
+                <button onClick={() => handleDeleteTask(task.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                    <Trash2 size={14} />
+                </button>
+            </div>
+            {task.labels && task.labels.length > 0 && (
+                <div className="board-card-tags" style={{ paddingRight: '40px' }}>
+                    {task.labels.map(lbl => (
+                        <span key={lbl} className={`board-tag ${getLabelColor(lbl)}`}>{lbl}</span>
+                    ))}
+                </div>
+            )}
+            <h4 style={{ textDecoration: task.column === 'Completed' ? 'line-through' : 'none', paddingRight: '40px' }}>{task.title}</h4>
+            {task.description && <p>{task.description}</p>}
+
+            {(task.assignee || task.dueDate) && (
+                <>
+                    <div className="board-card-divider"></div>
+                    <div className="board-card-footer">
+                        {task.assignee && (
+                            <div className="board-card-user">
+                                <div className="board-avatar-mini" style={{ backgroundColor: task.assignee === 'Self' ? '#e2e8f0' : '#6366f1', color: task.assignee === 'Self' ? '#475569' : 'white' }}>
+                                    {task.assignee === 'Self' ? 'S' : task.assignee.charAt(0)}
+                                </div>
+                                <span className="board-user-name">{task.assignee}</span>
+                            </div>
+                        )}
+                        {task.dueDate && (
+                            <div className="board-card-date"><Calendar size={12} /> {task.dueDate} {task.time}</div>
+                        )}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+
+    const renderTasksBoardView = () => (
+        <div style={{ marginTop: '20px' }}>
+            <div className="mw-card" style={{ marginBottom: '20px', padding: '1rem 1.5rem' }}>
+                <div className="board-header-row" style={{ marginBottom: 0 }}>
+                    <div className="board-title-group">
+                        <button className="back-btn" onClick={() => setIsViewingBoard(false)}>
+                            <ArrowLeft size={18} />
+                        </button>
+                        <div className="board-title-text">
+                            <div className="board-sup-text">{isFaculty ? 'FACULTY WORKSPACE / TASKS' : 'MENTOR WORKSPACE / TASKS'}</div>
+                            <h1>{isFaculty ? 'Teaching Tasks Board' : 'Mentoring Tasks Board'}</h1>
+                            <p>Organize and track all your {isFaculty ? 'course preps, grading, and tasks' : 'mentoring sessions, follow-ups, and action items'}.</p>
+                        </div>
+                    </div>
+                    <div className="board-actions">
+                        <div className="view-toggle">
+                            <button className="view-btn"><List size={14} /> List</button>
+                            <button className="view-btn active"><LayoutGrid size={14} /> Board</button>
+                        </div>
+                        <button className="filter-btn-board"><Filter size={14} /> Filters</button>
+                        <button className="add-task-btn-top" onClick={() => openCreateTaskModal('Upcoming')}><Plus size={16} /> New Task</button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="board-columns-container custom-scrollbar">
+
+                {/* UPCOMING */}
+                <div className="board-col-wrap">
+                    <div className="board-col-header">
+                        <div className="col-title-group">
+                            <h3>UPCOMING</h3>
+                            <span className="col-count">{getColTasks('Upcoming').length}</span>
+                        </div>
+                        <button className="col-more-btn"><MoreHorizontal size={16} /></button>
+                    </div>
+                    <div className="board-cards-list">
+                        {getColTasks('Upcoming').map(renderCard)}
+                    </div>
+                    <button className="add-task-col-btn" onClick={() => openCreateTaskModal('Upcoming')}><Plus size={14} /> Add a task</button>
+                </div>
+
+                {/* THIS WEEK */}
+                <div className="board-col-wrap">
+                    <div className="board-col-header">
+                        <div className="col-title-group">
+                            <h3>THIS WEEK</h3>
+                            <span className="col-count">{getColTasks('This Week').length}</span>
+                        </div>
+                        <button className="col-more-btn"><MoreHorizontal size={16} /></button>
+                    </div>
+                    <div className="board-cards-list">
+                        {getColTasks('This Week').map(renderCard)}
+                    </div>
+                    <button className="add-task-col-btn" onClick={() => openCreateTaskModal('This Week')}><Plus size={14} /> Add a task</button>
+                </div>
+
+                {/* LATER */}
+                <div className="board-col-wrap">
+                    <div className="board-col-header">
+                        <div className="col-title-group">
+                            <h3>LATER</h3>
+                            <span className="col-count">{getColTasks('Later').length}</span>
+                        </div>
+                        <button className="col-more-btn"><MoreHorizontal size={16} /></button>
+                    </div>
+                    <div className="board-cards-list">
+                        {getColTasks('Later').map(renderCard)}
+                    </div>
+                    <button className="add-task-col-btn" onClick={() => openCreateTaskModal('Later')}><Plus size={14} /> Add a task</button>
+                </div>
+
+                {/* COMPLETED */}
+                <div className="board-col-wrap">
+                    <div className="board-col-header">
+                        <div className="col-title-group">
+                            <h3>COMPLETED</h3>
+                            <span className="col-count">{getColTasks('Completed').length}</span>
+                        </div>
+                        <button className="col-more-btn"><MoreHorizontal size={16} /></button>
+                    </div>
+                    <div className="board-cards-list">
+                        {getColTasks('Completed').map(renderCard)}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+
+    const renderMentorView = () => (
+        <div className="mw-grid">
+            {/* Left Column */}
+            <div className="mw-main">
+
+                {/* Mentoring Snapshot */}
+                <div className="mw-card">
+                    <div className="mw-card-header">
+                        <h2>Mentoring snapshot</h2>
+                        <p>Key numbers for your assigned mentees</p>
+                    </div>
+                    <div className="mw-snapshot-grid">
+                        <div className="mw-snap-item">
+                            <div className="snap-label">ACTIVE MENTEES</div>
+                            <div className="snap-value-row">
+                                <div className="snap-icon users-icon"><Users size={20} /></div>
+                                <span className="snap-value">{stats.activeMentees}</span>
+                            </div>
+                            <div className="snap-desc">{stats.openConcerns} with open concerns</div>
+                        </div>
+
+                        <div className="mw-snap-item">
+                            <div className="snap-label">PENDING CHECK-INS</div>
+                            <div className="snap-value-row">
+                                <div className="snap-icon check-icon"><ClipboardCheck size={20} /></div>
+                                <span className="snap-value">{stats.pendingCheckIns}</span>
+                            </div>
+                            <div className="snap-desc">Due this week</div>
+                        </div>
+
+                        <div className="mw-snap-item">
+                            <div className="snap-label">MENTOR ALERTS</div>
+                            <div className="snap-value-row">
+                                <div className="snap-icon alert-icon"><Bell size={20} /></div>
+                                <span className="snap-value">{stats.alertsHigh + stats.alertsLow}</span>
+                            </div>
+                            <div className="snap-desc">{stats.alertsHigh} high - {stats.alertsLow} low</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* My Mentees */}
+                <div className="mw-card">
+                    <div className="mw-card-header space-between">
+                        <div>
+                            <h2>My Mentees</h2>
+                            <p>Students assigned to you for mentoring and guidance</p>
+                        </div>
+                        <button className="mw-text-btn">View all {mentees.length} mentees</button>
+                    </div>
+
+                    <div className="mw-filters">
+                        {['All', 'Action required', 'Recent meetings', 'No recent activity'].map(filter => (
+                            <button
+                                key={filter}
+                                onClick={() => setActiveMenteeFilter(filter)}
+                                className={`mw-filter-btn ${activeMenteeFilter === filter ? 'active' : ''}`}
+                            >
+                                {filter}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mw-mentee-list">
+                        {filteredMentees.length === 0 ? (
+                            <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center', padding: '1rem' }}>No mentees found matching criteria.</p>
+                        ) : (
+                            filteredMentees.slice(0, 4).map((mentee, index) => {
+                                const dept = mentee.studentDetails?.department || '';
+                                const sem = mentee.studentDetails?.semester ? `Sem ${mentee.studentDetails.semester}` : '';
+                                const gpa = mentee.studentDetails?.gpa || mentee.gpa;
+                                const attendance = mentee.studentDetails?.attendance || mentee.attendance;
+
+                                let badgeClass = "on-track";
+                                let badgeText = "On Track";
+                                let subtitle = `${sem} ${dept} · Everything looks good`.trim();
+
+                                if (gpa && gpa < 7.0) {
+                                    badgeClass = "high-priority";
+                                    badgeText = "High priority";
+                                    subtitle = `${sem} ${dept} · Low GPA requires attention`.trim();
+                                } else if (attendance && attendance < 75) {
+                                    badgeClass = "high-priority";
+                                    badgeText = "Low Attd.";
+                                    subtitle = `${sem} ${dept} · Attendance requires attention`.trim();
+                                } else if (index % 2 !== 0 && index > 0) {
+                                    badgeClass = "follow-up";
+                                    badgeText = "Follow up";
+                                    subtitle = `${sem} ${dept} · Needs check-in`.trim();
+                                }
+
+                                return (
+                                    <div className="mw-mentee-item" key={mentee.id || index}>
+                                        <div className="mentee-info">
+                                            <div className={`mentee-avatar ${getBgClass(index)}`}>
+                                                {getInitials(mentee.fullName)}
+                                            </div>
+                                            <div className="mentee-details">
+                                                <h4>{mentee.fullName || 'Unknown Student'}</h4>
+                                                <p>{subtitle}</p>
+                                            </div>
+                                        </div>
+                                        <div className={`mw-badge-pill ${badgeClass}`}>{badgeText}</div>
+                                    </div>
+                                )
+                            })
+                        )}
+                    </div>
+                </div>
+
+                {/* Mentoring Summary */}
+                <div className="mw-card">
+                    <div className="mw-card-header">
+                        <h2>Mentoring summary</h2>
+                        <p>Quick overview of your mentoring workload</p>
+                    </div>
+                    <div className="mw-summary-grid">
+                        <div className="mw-summary-item dashed-box">
+                            <div className="sum-label">Counseling sessions this month</div>
+                            <div className="sum-value">{stats.sessionsThisMonth}</div>
+                            <div className="sum-desc">Based on scheduled events</div>
+                        </div>
+                        <div className="mw-summary-item dashed-box">
+                            <div className="sum-label">Pending follow-ups</div>
+                            <div className="sum-value">{stats.pendingCheckIns}</div>
+                            <div className="sum-desc">Upcoming standard checks</div>
+                        </div>
+                        <div className="mw-summary-item dashed-box">
+                            <div className="sum-label">Mentees with low GPA (&lt; 7)</div>
+                            <div className="sum-value">{stats.lowGpaCount}</div>
+                            <div className="sum-desc">Academic support needed</div>
+                        </div>
+                        <div className="mw-summary-item dashed-box">
+                            <div className="sum-label">Open counseling notes</div>
+                            <div className="sum-value">{stats.openConcerns}</div>
+                            <div className="sum-desc">Awaiting closure</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="mw-sidebar">
+                {/* Mentoring Tasks */}
+                <div className="mw-card">
+                    <div className="mw-card-header space-between">
+                        <div>
+                            <h2>Mentoring tasks</h2>
+                            <p>Organize your upcoming sessions and follow-ups</p>
+                        </div>
+                        <button className="mw-text-btn" onClick={() => setIsViewingBoard(true)}>View full board</button>
+                    </div>
+
+                    <div className="mw-kanban">
+                        <div className="kanban-col">
+                            <div className="kanban-header">Upcoming</div>
+                            {getColTasks('Upcoming').length === 0 ? (
+                                <div className="kanban-card">
+                                    <h4>No scheduled</h4>
+                                    <p>events found.</p>
+                                </div>
+                            ) : getColTasks('Upcoming').slice(0, 2).map((t, i) => (
+                                <div className="kanban-card" key={i}>
+                                    <h4>{t.title}</h4>
+                                    <p>{t.description ? (t.description.length > 20 ? t.description.substring(0, 20) + '...' : t.description) : 'No description'}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="kanban-col">
+                            <div className="kanban-header">This Week</div>
+                            {getColTasks('This Week').length === 0 ? (
+                                <div className="kanban-card">
+                                    <h4>No tasks</h4>
+                                    <p>found.</p>
+                                </div>
+                            ) : getColTasks('This Week').slice(0, 2).map((t, i) => (
+                                <div className="kanban-card highlight" key={i}>
+                                    <h4>{t.title}</h4>
+                                    <p>{t.description ? (t.description.length > 20 ? t.description.substring(0, 20) + '...' : t.description) : 'No description'}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="kanban-col">
+                            <div className="kanban-header">Later</div>
+                            {getColTasks('Later').length === 0 ? (
+                                <div className="kanban-card">
+                                    <h4>No tasks</h4>
+                                    <p>found.</p>
+                                </div>
+                            ) : getColTasks('Later').slice(0, 2).map((t, i) => (
+                                <div className="kanban-card" key={i}>
+                                    <h4>{t.title}</h4>
+                                    <p>{t.description ? (t.description.length > 20 ? t.description.substring(0, 20) + '...' : t.description) : 'No description'}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mentoring Activity */}
+                <div className="mw-card custom-flex-grow">
+                    <div className="mw-card-header">
+                        <h2>Mentoring activity</h2>
+                        <p>Recent notes and sessions with your mentees</p>
+                    </div>
+
+                    <div className="mw-timeline">
+                        <div className="timeline-item">
+                            <div className="timeline-dot"></div>
+                            <div className="timeline-content">
+                                <h4>Dashboard Synchronized</h4>
+                                <p>Today · Extracted latest mentee statistics</p>
+                            </div>
+                        </div>
+
+                        <div className="timeline-item">
+                            <div className="timeline-dot"></div>
+                            <div className="timeline-content">
+                                <h4>Meeting functionality active</h4>
+                                <p>Live · Listening for newly scheduled meetings</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    );
+
+    const renderFacultyView = () => (
+        <div className="mw-grid">
+            {/* Left Column */}
+            <div className="mw-main">
+
+                {/* Teaching Snapshot */}
+                <div className="mw-card">
+                    <div className="mw-card-header">
+                        <h2>Teaching snapshot</h2>
+                        <p>Key numbers for your current semester</p>
+                    </div>
+                    <div className="mw-snapshot-grid">
+                        <div className="mw-snap-item">
+                            <div className="snap-label">ACTIVE COURSES</div>
+                            <div className="snap-value-row">
+                                <div className="snap-icon users-icon"><BookOpen size={20} /></div>
+                                <span className="snap-value">{stats.activeCourses}</span>
+                            </div>
+                            <div className="snap-desc">{stats.activeCourses} core</div>
+                        </div>
+
+                        <div className="mw-snap-item">
+                            <div className="snap-label">PENDING GRADING</div>
+                            <div className="snap-value-row">
+                                <div className="snap-icon check-icon"><FileEdit size={20} /></div>
+                                <span className="snap-value">{stats.pendingGrading || 0}</span>
+                            </div>
+                            <div className="snap-desc">Assignments due</div>
+                        </div>
+
+                        <div className="mw-snap-item">
+                            <div className="snap-label">ATTENDANCE ALERTS</div>
+                            <div className="snap-value-row">
+                                <div className="snap-icon alert-icon"><Bell size={20} /></div>
+                                <span className="snap-value">{stats.alertsHigh + stats.alertsLow}</span>
+                            </div>
+                            <div className="snap-desc">Below 75% limit</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* My Classes */}
+                <div className="mw-card">
+                    <div className="mw-card-header space-between">
+                        <div>
+                            <h2>My Classes</h2>
+                            <p>Courses you are teaching this semester</p>
+                        </div>
+                        <button className="mw-text-btn">View all schedule</button>
+                    </div>
+
+                    <div className="mw-filters">
+                        {['All', 'Lectures', 'Laboratories', 'Pending grading'].map(filter => (
+                            <button
+                                key={filter}
+                                className={`mw-filter-btn ${filter === 'All' ? 'active' : ''}`}
+                            >
+                                {filter}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mw-mentee-list">
+                        {facultySections.length === 0 ? (
+                            <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center', padding: '1rem' }}>No sections found.</p>
+                        ) : (
+                            facultySections.slice(0, 4).map((section, index) => {
+                                const dept = section.course?.department || '';
+                                const code = section.course?.code || '';
+                                const name = section.course?.name || '';
+                                const sem = section.semester ? `Sem ${section.semester}` : '';
+
+                                // Mock dynamic pills based on index
+                                let badgeClass = "on-track";
+                                let badgeText = "On track";
+                                let statusText = "Class scheduled soon";
+
+                                if (index === 1) {
+                                    badgeClass = "high-priority";
+                                    badgeText = "Action required";
+                                    statusText = "Mid-terms grading in progress";
+                                } else if (index === 2) {
+                                    badgeClass = "met-recently border-only";
+                                    badgeText = "Lab pending";
+                                    statusText = "Next class tomorrow";
+                                }
+
+                                return (
+                                    <div className="mw-mentee-item" key={section.id || index}>
+                                        <div className="mentee-info">
+                                            <div className={`mentee-avatar ${getBgClass(index)}`}>
+                                                {code.slice(0, 2)}
+                                            </div>
+                                            <div className="mentee-details">
+                                                <h4>{code} · {name}</h4>
+                                                <p>{sem} {dept} · {statusText}</p>
+                                            </div>
+                                        </div>
+                                        <div className={`mw-badge-pill ${badgeClass}`}>{badgeText}</div>
+                                    </div>
+                                )
+                            })
+                        )}
+                    </div>
+                </div>
+
+                {/* Teaching summary */}
+                <div className="mw-card">
+                    <div className="mw-card-header">
+                        <h2>Teaching summary</h2>
+                        <p>Quick overview of your academic workload</p>
+                    </div>
+                    <div className="mw-summary-grid">
+                        <div className="mw-summary-item dashed-box">
+                            <div className="sum-label">Total Students Taught</div>
+                            <div className="sum-value">{stats.totalStudentsTaught}</div>
+                            <div className="sum-desc">Across {stats.activeCourses} sections</div>
+                        </div>
+                        <div className="mw-summary-item dashed-box">
+                            <div className="sum-label">Average Attendance</div>
+                            <div className="sum-value">82%</div>
+                            <div className="sum-desc">Needs improvement</div>
+                        </div>
+                        <div className="mw-summary-item dashed-box">
+                            <div className="sum-label">Assignments Published</div>
+                            <div className="sum-value">{facultySections.length * 3}</div>
+                            <div className="sum-desc">4 currently active</div>
+                        </div>
+                        <div className="mw-summary-item dashed-box">
+                            <div className="sum-label">Pending Approvals</div>
+                            <div className="sum-value">2</div>
+                            <div className="sum-desc">Student leave requests</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="mw-sidebar">
+                {/* Teaching Tasks */}
+                <div className="mw-card">
+                    <div className="mw-card-header space-between">
+                        <div>
+                            <h2>Teaching tasks</h2>
+                            <p>Organize your prep and grading</p>
+                        </div>
+                        <button className="mw-text-btn" onClick={() => setIsViewingBoard(true)}>View full board</button>
+                    </div>
+
+                    <div className="mw-kanban">
+                        <div className="kanban-col">
+                            <div className="kanban-header">Upcoming</div>
+                            {getColTasks('Upcoming').length === 0 ? (
+                                <div className="kanban-card">
+                                    <h4>No scheduled</h4>
+                                    <p>events found.</p>
+                                </div>
+                            ) : getColTasks('Upcoming').slice(0, 2).map((t, i) => (
+                                <div className="kanban-card" key={i}>
+                                    <h4>{t.title}</h4>
+                                    <p>{t.description ? (t.description.length > 20 ? t.description.substring(0, 20) + '...' : t.description) : 'No description'}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="kanban-col">
+                            <div className="kanban-header">This Week</div>
+                            {getColTasks('This Week').length === 0 ? (
+                                <div className="kanban-card">
+                                    <h4>No tasks</h4>
+                                    <p>found.</p>
+                                </div>
+                            ) : getColTasks('This Week').slice(0, 2).map((t, i) => (
+                                <div className="kanban-card highlight" key={i}>
+                                    <h4>{t.title}</h4>
+                                    <p>{t.description ? (t.description.length > 20 ? t.description.substring(0, 20) + '...' : t.description) : 'No description'}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="kanban-col">
+                            <div className="kanban-header">Later</div>
+                            {getColTasks('Later').length === 0 ? (
+                                <div className="kanban-card">
+                                    <h4>No tasks</h4>
+                                    <p>found.</p>
+                                </div>
+                            ) : getColTasks('Later').slice(0, 2).map((t, i) => (
+                                <div className="kanban-card" key={i}>
+                                    <h4>{t.title}</h4>
+                                    <p>{t.description ? (t.description.length > 20 ? t.description.substring(0, 20) + '...' : t.description) : 'No description'}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Teaching Activity */}
+                <div className="mw-card custom-flex-grow">
+                    <div className="mw-card-header">
+                        <h2>Teaching activity</h2>
+                        <p>Recent actions across your courses</p>
+                    </div>
+
+                    <div className="mw-timeline">
+                        <div className="timeline-item">
+                            <div className="timeline-dot"></div>
+                            <div className="timeline-content">
+                                <h4>Published Assignment 3 for CSE301</h4>
+                                <p>Today · Data Structures arrays and lists</p>
+                            </div>
+                        </div>
+
+                        <div className="timeline-item">
+                            <div className="timeline-dot"></div>
+                            <div className="timeline-content">
+                                <h4>Recorded attendance for IT201</h4>
+                                <p>Yesterday · 4 absentees marked</p>
+                            </div>
+                        </div>
+
+                        <div className="timeline-item">
+                            <div className="timeline-dot"></div>
+                            <div className="timeline-content">
+                                <h4>Uploaded lecture notes</h4>
+                                <p>2 days ago · Algorithms Chapter 4</p>
+                            </div>
+                        </div>
+
+                        <div className="timeline-item">
+                            <div className="timeline-dot"></div>
+                            <div className="timeline-content">
+                                <h4>Approved leave request for John D</h4>
+                                <p>4 days ago · Medical leave</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="mw-container">
+            {/* Main Header (Hidden when viewing Full Board) */}
+            {!isViewingBoard && (
+                <header className="mw-header-wrap">
+                    <div className="mw-header-left">
+                        <div className="mw-badge">
+                            <span className="mw-star">★</span> {isFaculty ? 'FACULTY VIEW' : 'MENTOR VIEW'}
+                        </div>
+                        <h1>{isFaculty ? 'Faculty workspace' : 'Mentor workspace'}</h1>
+                        <p>{isFaculty ? 'Manage your courses, track student attendance, and review academic performance.' : 'Track your mentees\' progress, schedule counseling sessions, and review well-being alerts.'}</p>
+                    </div>
+
+                    <div className="mw-header-right">
+                        {userData?.role !== 'TEACHER' && (
+                            <div className="mw-tabs">
+                                {['Combined', 'Only mentor', 'Only faculty'].map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`mw-tab-btn ${activeTab === tab ? 'active' : ''}`}
+                                    >
+                                        {tab}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="mw-date">
+                            <Calendar size={14} /> Today · {formatDate()}
+                        </div>
+                        <button className="mw-btn-primary" onClick={isFaculty ? handleLogAttendanceClick : undefined}>
+                            <Plus size={14} /> {isFaculty ? 'Log attendance' : 'New check-in'}
+                        </button>
+                    </div>
+                </header>
+            )}
+
+            {isViewingBoard
+                ? renderTasksBoardView()
+                : isLoggingAttendance && isFaculty
+                    ? renderLogAttendanceView()
+                    : (isFaculty ? renderFacultyView() : renderMentorView())
+            }
+
+            {renderNewTaskModal()}
         </div>
     );
 };

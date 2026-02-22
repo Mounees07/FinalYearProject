@@ -16,7 +16,8 @@ import {
     Image,
     Type,
     FileText,
-    Video
+    Video,
+    CheckCircle
 } from 'lucide-react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
@@ -33,6 +34,13 @@ const TeacherCourseManage = () => {
     const [assignments, setAssignments] = useState([]);
     const [submissions, setSubmissions] = useState([]);
     const [loadingLessons, setLoadingLessons] = useState(false);
+
+    // OTP Attendance State
+    const [activeSession, setActiveSession] = useState(null);
+    const [generatingOtp, setGeneratingOtp] = useState(false);
+    const [attendanceList, setAttendanceList] = useState([]);
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [progress, setProgress] = useState(100);
 
     // Form state for New Lesson
     const [newLesson, setNewLesson] = useState({
@@ -67,6 +75,12 @@ const TeacherCourseManage = () => {
     const [gradingSubmission, setGradingSubmission] = useState(null);
     const [gradeForm, setGradeForm] = useState({ grade: '', feedback: '' });
     const [isSubmittingGrade, setIsSubmittingGrade] = useState(false);
+
+    // Student Modal State
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [studentAttendanceHistory, setStudentAttendanceHistory] = useState([]);
+    const [sectionTotalSessions, setSectionTotalSessions] = useState(0);
+    const [loadingStudent, setLoadingStudent] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -157,6 +171,93 @@ const TeacherCourseManage = () => {
             }
         } catch (error) {
             console.error("Failed to fetch results", error);
+        }
+    };
+
+    useEffect(() => {
+        if (sectionDetails) fetchActiveSession();
+        // optionally refresh attendance list if active
+        let interval;
+        if (activeSession) {
+            interval = setInterval(() => {
+                fetchSessionAttendances(activeSession.id);
+            }, 5000);
+        }
+        return () => clearInterval(interval);
+    }, [sectionDetails, activeSession]);
+
+    const fetchActiveSession = async () => {
+        try {
+            const res = await api.get(`/course-attendance/sessions/section/${sectionId}/active`);
+            if (res.data) {
+                setActiveSession(res.data);
+                fetchSessionAttendances(res.data.id);
+            } else {
+                setActiveSession(null);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const fetchSessionAttendances = async (sessionId) => {
+        try {
+            const res = await api.get(`/course-attendance/sessions/${sessionId}/attendances`);
+            setAttendanceList(res.data);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    useEffect(() => {
+        let interval;
+        if (activeSession && activeSession.expiresAt && activeSession.createdAt) {
+            interval = setInterval(() => {
+                const now = new Date().getTime();
+                const expires = new Date(activeSession.expiresAt).getTime();
+                const created = new Date(activeSession.createdAt).getTime();
+                let remaining = expires - now;
+                const totalDur = (expires - created) || (2 * 60 * 1000);
+
+                if (remaining <= 0) {
+                    setTimeLeft(0);
+                    setProgress(0);
+                } else {
+                    setTimeLeft(Math.floor(remaining / 1000));
+                    setProgress((remaining / totalDur) * 100);
+                }
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [activeSession]);
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const handleGenerateOtp = async () => {
+        setGeneratingOtp(true);
+        try {
+            const res = await api.post(`/course-attendance/sessions/generate/${sectionId}?facultyUid=${currentUser.uid}`);
+            setActiveSession(res.data);
+            setAttendanceList([]);
+            alert("OTP Generated: " + res.data.otp);
+        } catch (e) {
+            alert("Failed to generate OTP: " + (e.response?.data || e.message));
+        } finally {
+            setGeneratingOtp(false);
+        }
+    };
+
+    const handleDeactivateOtp = async () => {
+        if (!activeSession) return;
+        try {
+            await api.post(`/course-attendance/sessions/${activeSession.id}/deactivate?facultyUid=${currentUser.uid}`);
+            setActiveSession(null);
+        } catch (e) {
+            alert("Failed to deactivate session");
         }
     };
 
@@ -281,6 +382,25 @@ const TeacherCourseManage = () => {
         }
     };
 
+    const handleStudentClick = async (student) => {
+        setSelectedStudent(student);
+        setLoadingStudent(true);
+        try {
+            const [historyRes, sessionsRes] = await Promise.all([
+                api.get(`/course-attendance/section/${sectionId}/student/${student.id}`),
+                api.get(`/course-attendance/sessions/section/${sectionId}`)
+            ]);
+            // sort history by markedAt descending
+            const sortedHistory = historyRes.data.sort((a, b) => new Date(b.markedAt) - new Date(a.markedAt));
+            setStudentAttendanceHistory(sortedHistory);
+            setSectionTotalSessions(sessionsRes.data.length);
+        } catch (e) {
+            console.error("Failed to fetch student details", e);
+        } finally {
+            setLoadingStudent(false);
+        }
+    };
+
     if (loading) return (
         <div className="min-h-screen flex flex-col items-center justify-center gap-6" style={{ background: 'var(--bg-deep)' }}>
             <div className="text-indigo-500 animate-spin"><Settings size={64} style={{ color: 'var(--primary)' }} /></div>
@@ -327,10 +447,118 @@ const TeacherCourseManage = () => {
                     <div className="banner-actions">
                         <button onClick={handleEditDetails} className="btn-premium btn-primary-purple"><Edit3 size={16} /> Edit Details</button>
                         <button onClick={handleTestToggle} className={`btn-premium ${testEnabled ? 'bg-green-600 border-green-600 text-white' : 'btn-outline-green'}`}>{testEnabled ? 'Tests Active' : 'Enable Tests'}</button>
+                        <button onClick={activeSession ? handleDeactivateOtp : handleGenerateOtp} className={`btn-premium ${activeSession ? 'bg-red-600 border-red-600 text-white' : 'btn-outline-violet'}`}>
+                            {generatingOtp ? 'Generating...' : activeSession ? 'Stop Attendance' : 'Generate OTP'}
+                        </button>
                         <button onClick={handleManageQuestions} className="btn-premium btn-outline-violet">Manage Questions</button>
                     </div>
                 </div>
             </div>
+
+            {activeSession && (
+                <div className="otp-layout animate-fade-in-up">
+                    {/* LEFT PANEL */}
+                    <div className="otp-panel left">
+                        <div className="otp-header">
+                            <h3 className="otp-header-title">Attendance Method</h3>
+                            <button className="otp-header-actions">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
+                            </button>
+                        </div>
+                        <div className="otp-body">
+                            <div className="otp-badge">
+                                <div className="otp-badge-dot animate-pulse"></div>
+                                Accepting Responses
+                            </div>
+                            <p className="otp-text">
+                                Project this screen. Students must enter this 6-digit code to mark themselves present.
+                            </p>
+
+                            <div className="otp-digits">
+                                {activeSession.otp.split('').map((digit, i) => (
+                                    <div key={i} className="otp-digit">
+                                        {digit}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="otp-timer">
+                                <div className="otp-timer-header">
+                                    <span>Time Remaining</span>
+                                    <span style={{ fontFamily: 'monospace' }}>{formatTime(timeLeft)}</span>
+                                </div>
+                                <div className="otp-timer-bar-bg">
+                                    <div className="otp-timer-bar-fill" style={{ width: `${progress}%` }}></div>
+                                </div>
+                            </div>
+
+                            <button onClick={handleDeactivateOtp} className="btn-end-session">
+                                <X size={18} /> End Session Early
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* RIGHT PANEL */}
+                    <div className="otp-panel right">
+                        <div className="otp-header">
+                            <h3 className="otp-header-title">Live Activity Feed</h3>
+                            <div className="otp-header-actions">
+                                Auto-updating <Clock size={14} className="animate-spin-slow" />
+                            </div>
+                        </div>
+                        <div className="otp-stats-row">
+                            <div className="otp-stat">
+                                <div className="otp-stat-val">{attendanceList.length}</div>
+                                <div className="otp-stat-label">Present</div>
+                            </div>
+                            <div className="otp-stat">
+                                <div className="otp-stat-val muted">{enrollments.length - attendanceList.length}</div>
+                                <div className="otp-stat-label">Pending/Absent</div>
+                            </div>
+                            <div className="otp-stat">
+                                <div className="otp-stat-val">{enrollments.length}</div>
+                                <div className="otp-stat-label">Total Enrolled</div>
+                            </div>
+                        </div>
+                        <div className="otp-list-wrapper">
+                            {attendanceList.length === 0 ? (
+                                <div className="otp-list-empty">
+                                    <Users size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
+                                    <p style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.875rem' }}>Waiting for responses...</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    {attendanceList.map((att, index) => (
+                                        <div key={att.id} className={`otp-list-item ${index % 2 === 1 ? 'zebra' : ''}`}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div className="otp-avatar">
+                                                    {att.student?.profilePictureUrl ? (
+                                                        <img src={att.student.profilePictureUrl} alt="Avatar" />
+                                                    ) : (
+                                                        att.student?.fullName?.charAt(0) || 'U'
+                                                    )}
+                                                </div>
+                                                <div className="otp-student-info">
+                                                    <div className="otp-student-name">{att.student?.fullName}</div>
+                                                    <div className="otp-student-id" style={{ fontFamily: 'monospace' }}>{att.student?.firebaseUid?.substring(0, 8).toUpperCase() || 'STU-UNKNOWN'}</div>
+                                                </div>
+                                            </div>
+                                            <div className="otp-list-actions">
+                                                <div className="otp-list-time">
+                                                    {new Date(att.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                                <div className="otp-list-badge">
+                                                    <CheckCircle size={14} /> Present
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="manage-grid">
                 <div className="content-card">
@@ -340,8 +568,8 @@ const TeacherCourseManage = () => {
                             <thead><tr><th>Name</th><th>Email</th><th className="text-right">Enrolled Date</th></tr></thead>
                             <tbody>
                                 {enrollments.map(e => (
-                                    <tr key={e.id}>
-                                        <td><div className="student-info-cell"><div className="student-avatar">{e.student.fullName?.charAt(0)}</div><span className="student-name">{e.student.fullName}</span></div></td>
+                                    <tr key={e.id} className="hover:bg-[var(--bg-deep)] transition-colors cursor-pointer" onClick={() => handleStudentClick(e.student)}>
+                                        <td><div className="student-info-cell"><div className="student-avatar">{e.student.fullName?.charAt(0)}</div><span className="student-name group-hover:text-indigo-500 transition-colors uppercase">{e.student.fullName}</span></div></td>
                                         <td className="email-cell">{e.student.email}</td>
                                         <td className="date-cell">{new Date(e.enrollmentDate).toLocaleDateString()}</td>
                                     </tr>
@@ -625,6 +853,76 @@ const TeacherCourseManage = () => {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Accurate Student Detail Modal Design */}
+            {selectedStudent && ReactDOM.createPortal(
+                <div className="student-modal-overlay" onClick={() => setSelectedStudent(null)}>
+                    <div className="student-modal-card" onClick={e => e.stopPropagation()}>
+                        <button className="student-modal-close" onClick={() => setSelectedStudent(null)}>
+                            <X size={16} />
+                        </button>
+
+                        <div className="student-profile-header">
+                            {selectedStudent.profilePictureUrl ? (
+                                <img src={selectedStudent.profilePictureUrl} alt="Avatar" className="student-profile-avatar" />
+                            ) : (
+                                <div className="student-profile-avatar">{selectedStudent.fullName?.charAt(0) || 'U'}</div>
+                            )}
+                            <div className="student-profile-info">
+                                <h2>{selectedStudent.fullName}</h2>
+                                <div className="student-profile-meta">
+                                    <span className="student-id">ID: {selectedStudent.firebaseUid?.substring(0, 8).toUpperCase() || 'UNKNOWN'}</span>
+                                    <span className="dot">•</span>
+                                    <span className="student-email">{selectedStudent.email}</span>
+                                </div>
+                                <div className="student-course-pill">
+                                    {sectionDetails?.course?.code} - {sectionDetails?.course?.name}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="student-attendance-section">
+                            <h3 className="section-label">ATTENDANCE SUMMARY</h3>
+                            <div className="attendance-stats-grid">
+                                <div className="stat-box">
+                                    <span className="stat-label">Classes attended</span>
+                                    <span className="stat-value">{studentAttendanceHistory.length}</span>
+                                </div>
+                                <div className="stat-box">
+                                    <span className="stat-label">Total sessions</span>
+                                    <span className="stat-value">{sectionTotalSessions}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="student-history-section">
+                            <h3 className="history-label">Attendance history</h3>
+                            <div className="history-container">
+                                {loadingStudent ? (
+                                    <div className="fetching-msg">Fetching detailed history for <span className="highlight">this course</span>...</div>
+                                ) : studentAttendanceHistory.length === 0 ? (
+                                    <div className="fetching-msg">No attendance records found for <span className="highlight">this course</span>.</div>
+                                ) : (
+                                    <div className="history-list custom-scrollbar">
+                                        {studentAttendanceHistory.map((att, idx) => (
+                                            <div key={idx} className="history-item">
+                                                <div className="date">{new Date(att.session?.createdAt || att.markedAt).toLocaleDateString()} at {new Date(att.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                <div className="status">{att.status || 'PRESENT'}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="student-modal-footer">
+                            <div className="footer-left">Overall attendance • {Math.round((studentAttendanceHistory.length / Math.max(sectionTotalSessions, 1)) * 100)}%</div>
+                            <div className="footer-right">Last updated • just now</div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
         </div>
     );

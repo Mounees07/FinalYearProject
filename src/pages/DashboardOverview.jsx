@@ -36,7 +36,8 @@ const DashboardOverview = () => {
         cgpa: "0.00",
         attendance: "0",
         activeCourses: "0",
-        pendingAssignments: "0"
+        pendingAssignments: "0",
+        placementStatus: "Not Evaluated"
     });
 
     const [activeTab, setActiveTab] = useState('Personal');
@@ -119,6 +120,14 @@ const DashboardOverview = () => {
                 const totalLeaves = 10; // Assuming total leaves allowed is 10
                 const leaveBalance = totalLeaves - approvedLeaves;
 
+                // Determine placement status based on semantic criteria
+                let placement = "Not Evaluated";
+                if (userRes.data.placementStatus) {
+                    placement = userRes.data.placementStatus;
+                } else if (userRes.data.semester >= 6) {
+                    placement = "Eligible";
+                }
+
                 setDashboardStats({
                     cgpa: userRes.data.cgpa ? Number(userRes.data.cgpa).toFixed(2) : (userRes.data.gpa ? Number(userRes.data.gpa).toFixed(2) : "N/A"),
                     sgpa: currentSgpa,
@@ -127,7 +136,7 @@ const DashboardOverview = () => {
                     pendingAssignments: pendingCount.toString(),
                     arrearCount: userRes.data.arrearCount || 0,
                     feesDue: userRes.data.feesDue || 0,
-                    leaveBalance: leaveBalance
+                    placementStatus: placement
                 });
 
                 if (enrollments.length === 0) {
@@ -173,6 +182,82 @@ const DashboardOverview = () => {
         gender: "Male", // Placeholder
         nationality: "Indian",
         photo: profile.profilePictureUrl || "https://ui-avatars.com/api/?name=" + (profile.fullName || 'User') + "&background=random"
+    };
+
+    const loadScript = (src) => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
+    const handlePayment = async () => {
+        const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+        if (!res) {
+            alert('Razorpay SDK failed to load. Are you online?');
+            return;
+        }
+
+        // Test with real due fee amount, fall back to default demo amount if 0
+        const amountDue = Number(dashboardStats.feesDue);
+        const feeAmount = amountDue > 0 ? amountDue : 1000;
+
+        try {
+            const response = await api.post('/payments/create-order', {
+                amount: feeAmount,
+                currency: "INR"
+            });
+
+            if (!response.data || response.data.error) {
+                alert("Server error. Have you configured your Razorpay Test Keys in application.properties?");
+                return;
+            }
+
+            const { orderId, amount, currency, keyId } = response.data;
+
+            const options = {
+                key: keyId,
+                amount: amount,
+                currency: currency,
+                name: 'AcaSync Platform',
+                description: 'Semester Fee Payment',
+                order_id: orderId,
+                handler: async function (response) {
+                    try {
+                        const verifyResult = await api.post('/payments/verify', {
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                        });
+
+                        if (verifyResult.data.status === 'success') {
+                            alert("Payment Successful! 🎉");
+                            setDashboardStats(prev => ({ ...prev, feesDue: 0 }));
+                        }
+                    } catch (err) {
+                        alert("Payment verification failed.");
+                        console.error(err);
+                    }
+                },
+                prefill: {
+                    name: studentInfo.name,
+                    email: studentInfo.email,
+                    contact: studentInfo.phone
+                },
+                theme: {
+                    color: '#6366f1'
+                }
+            };
+
+            const paymentObject = new window.Razorpay(options);
+            paymentObject.open();
+        } catch (error) {
+            console.error("Payment flow error:", error);
+            alert("Payment could not be initiated. Check server connection or backend keys.");
+        }
     };
 
     return (
@@ -277,27 +362,56 @@ const DashboardOverview = () => {
                     </div>
 
                     {/* Fees Due */}
-                    <div className="dash-card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div
+                        className="dash-card"
+                        style={{
+                            padding: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s',
+                            boxShadow: '0 4px 12px rgba(248, 113, 113, 0.15)'
+                        }}
+                        onClick={handlePayment}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                    >
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(248, 113, 113, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
                             💰
                         </div>
-                        <div>
+                        <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Fees Due</div>
                             <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f87171' }}>
                                 ₹{Number(dashboardStats.feesDue).toLocaleString()}
                             </div>
                         </div>
+                        <div style={{
+                            background: '#f87171',
+                            color: 'white',
+                            fontSize: '0.7rem',
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontWeight: 'bold',
+                            textTransform: 'uppercase'
+                        }}>
+                            Pay Now
+                        </div>
                     </div>
 
-                    {/* Leave Balance */}
+                    {/* Placement Status */}
                     <div className="dash-card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(129, 140, 248, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                            🏖️
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                            💼
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Leave Balance</div>
-                            <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#818cf8' }}>
-                                {dashboardStats.leaveBalance} Days
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Placement Status</div>
+                            <div style={{ fontSize: '1.25rem', fontWeight: '700', color: dashboardStats.placementStatus === 'Offered' ? '#34d399' : (dashboardStats.placementStatus === 'Not Evaluated' ? '#64748b' : '#60a5fa') }}>
+                                {dashboardStats.placementStatus}
                             </div>
                         </div>
                     </div>

@@ -131,7 +131,6 @@
     font-size: 2rem;
     font-weight: 800;
     color: var(--text-primary);
-    /* Changed to use variable */
     margin-top: 16px;
     margin-bottom: 4px;
     position: relative;
@@ -169,7 +168,6 @@
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-primary);
-    /* Changed to use variable */
     margin: 0;
 }
 
@@ -183,7 +181,6 @@
     color: var(--text-primary);
 }
 
-/* Calendar Widget */
 /* Calendar Widget */
 .calendar-header-nav {
     display: flex;
@@ -238,7 +235,7 @@
 }
 
 .calendar-day.active {
-    background-color: #4D44B5;
+    background-color: var(--primary);
     color: white;
     box-shadow: 0 4px 10px rgba(77, 68, 181, 0.3);
 }
@@ -273,7 +270,6 @@
     border-radius: 50%;
     border: 2px solid;
     background-color: var(--bg-card);
-    /* Match card bg */
     z-index: 2;
 }
 
@@ -376,78 +372,77 @@
 .view-all-link {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #4D44B5;
+    color: var(--primary);
     cursor: pointer;
 }
 
 /* Utility Helpers for Colors */
 .text-purple {
-    color: #4D44B5;
+    color: var(--primary);
 }
 
 .bg-purple {
-    background-color: #4D44B5;
+    background-color: var(--primary);
 }
 
 .bg-light-purple {
-    background-color: rgba(77, 68, 181, 0.1);
-    color: #4D44B5;
+    background-color: var(--primary-glow);
+    color: var(--primary);
 }
 
 .border-purple {
-    border-color: #4D44B5;
+    border-color: var(--primary);
 }
 
 .text-orange {
-    color: #FB7D5B;
+    color: var(--danger);
 }
 
 .bg-orange {
-    background-color: #FB7D5B;
+    background-color: var(--danger);
 }
 
 .bg-light-orange {
-    background-color: rgba(251, 125, 91, 0.1);
-    color: #FB7D5B;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
 }
 
 .border-orange {
-    border-color: #FB7D5B;
+    border-color: var(--danger);
 }
 
 .text-yellow {
-    color: #FCC43E;
+    color: var(--warning);
 }
 
 .bg-yellow {
-    background-color: #FCC43E;
+    background-color: var(--warning);
 }
 
 .bg-light-yellow {
-    background-color: rgba(252, 196, 62, 0.1);
-    color: #FCC43E;
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
 }
 
 .border-yellow {
-    border-color: #FCC43E;
+    border-color: var(--warning);
 }
 
 .text-blue {
-    color: #303972;
+    color: var(--info);
 }
 
-/* Dark Blue */
 .bg-blue {
-    background-color: #303972;
+    background-color: var(--info);
 }
 
 .bg-light-blue {
-    background-color: rgba(48, 57, 114, 0.1);
-    color: #303972;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--info);
 }
 
 .border-blue {
-    border-color: #303972;
+    border-color: var(--info);
 }
 
 .text-white {
@@ -525,7 +520,7 @@
 
 .form-group input:focus,
 .form-group select:focus {
-    border-color: #4D44B5;
+    border-color: var(--primary);
 }
 
 .modal-actions {
@@ -551,14 +546,14 @@
 }
 
 .modal-actions button.primary-btn {
-    background-color: #4D44B5;
+    background-color: var(--primary);
     color: white;
     border: none;
-    box-shadow: 0 4px 12px rgba(77, 68, 181, 0.2);
+    box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 .modal-actions button.primary-btn:hover {
-    background-color: #3d3692;
+    filter: brightness(1.1);
 }
 
 /* Add Button */
@@ -566,7 +561,7 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background-color: #4D44B5;
+    background-color: var(--primary);
     color: white;
     border: none;
     display: flex;
@@ -575,22 +570,22 @@
     font-size: 1.25rem;
     cursor: pointer;
     transition: transform 0.2s, background-color 0.2s;
-    box-shadow: 0 4px 10px rgba(77, 68, 181, 0.3);
+    box-shadow: 0 4px 10px var(--primary-glow);
 }
 
 .add-btn:hover {
     transform: scale(1.1);
-    background-color: #3d3692;
+    filter: brightness(1.1);
 }
 
 /* --- Student List Page Styles --- */
 
 .student-list-container {
-    background-color: #F3F4FF;
+    background-color: var(--bg-deep);
     min-height: 100vh;
     padding: 32px;
-    font-family: 'Inter', sans-serif;
-    color: #303972;
+    font-family: var(--font-main);
+    color: var(--text-primary);
 }
 
 .student-list-header {
@@ -603,7 +598,7 @@
 .page-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #303972;
+    color: var(--text-primary);
     margin: 0;
 }
 
@@ -623,7 +618,7 @@
     left: 16px;
     top: 50%;
     transform: translateY(-50%);
-    color: #A098AE;
+    color: var(--text-secondary);
     pointer-events: none;
 }
 
@@ -632,23 +627,23 @@
     padding: 12px 16px 12px 48px;
     border-radius: 9999px;
     border: none;
-    background-color: #ffffff;
-    color: #303972;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    background-color: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-subtle);
     outline: none;
     font-size: 0.95rem;
     transition: box-shadow 0.2s;
 }
 
 .search-input:focus {
-    box-shadow: 0 0 0 2px #4D44B5;
+    box-shadow: 0 0 0 2px var(--primary);
 }
 
 .action-btn-yellow {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background-color: #FCC43E;
+    background-color: var(--warning);
     color: white;
     border: none;
     display: flex;
@@ -660,7 +655,7 @@
 }
 
 .action-btn-yellow:hover {
-    background-color: #fab005;
+    filter: brightness(1.1);
     transform: translateY(-2px);
 }
 
@@ -670,14 +665,15 @@
 
 .student-table-card,
 .teacher-table-card {
-    background-color: #ffffff;
+    background-color: var(--bg-card);
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-subtle);
     overflow: hidden;
     min-height: 600px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    border: 1px solid var(--glass-border);
 }
 
 .student-table,
@@ -689,18 +685,19 @@
 .student-table th,
 .teacher-table th {
     text-align: left;
-    color: #A098AE;
+    color: var(--text-secondary);
     font-weight: 700;
     font-size: 0.9rem;
     padding: 24px;
-    border-bottom: 1px solid #F5F5FA;
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .student-table td,
 .teacher-table td {
     padding: 24px;
-    border-bottom: 1px solid #F5F5FA;
+    border-bottom: 1px solid var(--glass-border);
     vertical-align: middle;
+    color: var(--text-primary);
 }
 
 .student-table tr:last-child td,
@@ -720,7 +717,7 @@
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: #4D44B5;
+    accent-color: var(--primary);
 }
 
 .student-row,
@@ -730,12 +727,12 @@
 
 .student-row:hover,
 .teacher-row:hover {
-    background-color: #F9FAFB;
+    background-color: var(--bg-subtle);
 }
 
 .student-row.selected,
 .teacher-row.selected {
-    background-color: #F3F4FF;
+    background-color: var(--glass-bg-hover);
 }
 
 .student-name-cell,
@@ -754,9 +751,10 @@
     justify-content: center;
     font-weight: 700;
     font-size: 1.1rem;
-    color: #303972;
+    color: var(--text-primary);
     overflow: hidden;
     flex-shrink: 0;
+    border: 1px solid var(--glass-border);
 }
 
 .avatar-img {
@@ -773,41 +771,39 @@
 .student-name,
 .teacher-name {
     font-weight: 700;
-    color: #303972;
+    color: var(--text-primary);
     font-size: 0.95rem;
 }
 
 .student-email,
 .teacher-email {
     font-size: 0.8rem;
-    color: #A098AE;
+    color: var(--text-secondary);
     margin-top: 4px;
 }
 
 .font-bold-blue {
     font-weight: 700;
-    color: #303972;
+    color: var(--text-primary);
 }
 
 .font-medium-blue {
     font-weight: 500;
-    color: #303972;
+    color: var(--text-primary);
 }
 
 .phone-cell {
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #303972;
-    font-weight: 500;
 }
 
 .phone-icon-circle {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background-color: #F3F4FF;
-    color: #4D44B5;
+    background-color: var(--bg-subtle);
+    color: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -818,7 +814,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #303972;
+    color: var(--text-primary);
 }
 
 .action-buttons-cell {
@@ -833,7 +829,7 @@
     border-radius: 50%;
     background: transparent;
     border: none;
-    color: #A098AE;
+    color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
@@ -842,19 +838,19 @@
 }
 
 .icon-action-btn:hover {
-    color: #4D44B5;
-    background-color: #F3F4FF;
+    color: var(--primary);
+    background-color: var(--bg-subtle);
 }
 
 .icon-action-btn.delete:hover {
-    color: #EF4444;
-    background-color: #FEF2F2;
+    color: var(--danger);
+    background-color: rgba(239, 68, 68, 0.1);
 }
 
 .loading-cell {
     text-align: center;
     padding: 40px;
-    color: #A098AE;
+    color: var(--text-secondary);
     font-size: 1rem;
 }
 
@@ -864,12 +860,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 1px solid #F5F5FA;
+    border-top: 1px solid var(--glass-border);
 }
 
 .showing-text {
     font-size: 0.9rem;
-    color: #A098AE;
+    color: var(--text-secondary);
 }
 
 .pagination-wrapper {
@@ -882,9 +878,9 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 1px solid #F5F5FA;
-    background: white;
-    color: #A098AE;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -893,9 +889,9 @@
 }
 
 .pagination-nav-btn:hover:not(:disabled) {
-    background-color: #4D44B5;
+    background-color: var(--primary);
     color: white;
-    border-color: #4D44B5;
+    border-color: var(--primary);
 }
 
 .pagination-nav-btn:disabled {
@@ -907,9 +903,9 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 1px solid #F5F5FA;
-    background: white;
-    color: #303972;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-card);
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -920,14 +916,14 @@
 }
 
 .pagination-number-btn:hover {
-    background-color: #E0E0E0;
+    background-color: var(--bg-subtle);
 }
 
 .pagination-number-btn.active {
-    background-color: #4D44B5;
+    background-color: var(--primary);
     color: white;
-    border-color: #4D44B5;
-    box-shadow: 0 4px 10px rgba(77, 68, 181, 0.3);
+    border-color: var(--primary);
+    box-shadow: 0 4px 10px var(--primary-glow);
 }
 
 .pagination-ellipsis {
@@ -936,7 +932,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #A098AE;
+    color: var(--text-secondary);
 }
 
 /* Role Badges */
@@ -950,41 +946,47 @@
 }
 
 .role-badge.teacher {
-    background-color: #E6F3FF;
-    color: #4D44B5;
+    background-color: rgba(99, 102, 241, 0.1);
+    /* var(--primary) derived */
+    color: var(--primary);
 }
 
 .role-badge.mentor {
-    background-color: #FFF4E6;
-    color: #FB7D5B;
+    background-color: rgba(249, 115, 22, 0.1);
+    color: #f97316;
 }
 
 .role-badge.hod {
-    background-color: #E6FFF6;
-    color: #00B087;
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
 }
 
 .role-badge.principal {
-    background-color: #F3E6FF;
-    color: #8B5CF6;
+    background-color: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
 }
 
 .role-badge.student {
-    background-color: #F3F4FF;
-    color: #303972;
+    background-color: var(--bg-subtle);
+    color: var(--text-primary);
 }
 
 .role-badge.admin {
-    background-color: #2D3748;
-    color: #FFFFFF;
+    background-color: var(--bg-subtle);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
 }
 
 .role-badge.coe {
-    background-color: #FFF9C4;
-    color: #F59E0B;
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
 }
 
 .role-badge.gate_security {
-    background-color: #E2E8F0;
-    color: #4A5568;
+    background-color: var(--bg-subtle);
+    color: var(--text-secondary);
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-out;
 }

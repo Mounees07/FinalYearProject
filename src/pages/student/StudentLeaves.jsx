@@ -5,7 +5,7 @@ import { Plus, Search, Loader, Filter, ChevronRight, User, X } from 'lucide-reac
 import './StudentLeaves.css';
 
 const StudentLeaves = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, userData } = useAuth();
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -27,6 +27,15 @@ const StudentLeaves = () => {
     useEffect(() => {
         fetchLeaves();
     }, [currentUser]);
+
+    // Auto-fill parent email from profile when apply modal opens or userData changes
+    useEffect(() => {
+        if (userData) {
+            // Check for parentEmailId at root (JsonUnwrapped) or nested
+            const pEmail = userData.parentEmailId || userData.studentDetails?.parentEmailId || '';
+            setFormData(prev => ({ ...prev, parentEmail: pEmail }));
+        }
+    }, [userData, showApplyModal]);
 
     const fetchLeaves = async () => {
         try {
@@ -356,10 +365,17 @@ const StudentLeaves = () => {
                                         type="email"
                                         className="custom-input"
                                         required
-                                        placeholder="parent@example.com"
+                                        placeholder="Parent email from profile"
                                         value={formData.parentEmail}
-                                        onChange={e => setFormData({ ...formData, parentEmail: e.target.value })}
+                                        readOnly
+                                        disabled
+                                        style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed', color: '#6b7280' }}
                                     />
+                                    {!formData.parentEmail && (
+                                        <small style={{ color: '#ef4444', marginTop: '4px', display: 'block' }}>
+                                            Parent email not found in your profile. Please contact administration to update it.
+                                        </small>
+                                    )}
                                 </div>
                                 <div className="form-group">
                                     <label>Remarks</label>
